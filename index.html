@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adara Protocol — Tester Onboarding</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#06070A',
+            graphite: '#0E1117',
+            pearl: '#F5F7FB',
+            muted: '#A9B2C3',
+            'muted-dim': '#6B7280',
+            cyan: '#36E3FF',
+            violet: '#8B5CF6',
+            'aurora-blue': '#4F7CFF',
+            mint: '#3EE8B5',
+            amber: '#FFB84D',
+          },
+          fontFamily: {
+            display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+            body: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #06070A; color: #F5F7FB; font-family: 'Inter', system-ui, sans-serif; }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-repeat: repeat; background-size: 256px 256px;
+    }
+    ::selection { background: rgba(139, 92, 246, 0.3); color: #F5F7FB; }
+    .glass { background: rgba(14, 17, 23, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass:hover { border-color: rgba(255, 255, 255, 0.14); }
+    .gradient-mesh {
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 40%, rgba(139, 92, 246, 0.2) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 80% 30%, rgba(54, 227, 255, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 40% at 50% 80%, rgba(79, 124, 255, 0.1) 0%, transparent 60%);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #8B5CF6, #36E3FF);
+      transition: all 0.3s ease; position: relative; overflow: hidden;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(139, 92, 246, 0.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.3s ease;
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+    .input-field {
+      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: border-color 0.3s ease;
+    }
+    .input-field:focus { border-color: #8B5CF6; outline: none; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
+    .step-dot { transition: all 0.4s ease; }
+    .step-dot.active { background: linear-gradient(135deg, #8B5CF6, #36E3FF); box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+    .step-dot.completed { background: #3EE8B5; }
+    .step-line { transition: background 0.6s ease; }
+    .step-line.completed { background: #3EE8B5; }
+    .tx-status { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes confetti-fall {
+      0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti-piece {
+      position: fixed; top: 0; z-index: 10000; pointer-events: none;
+      animation: confetti-fall 3s ease-in forwards;
+    }
+    .card-glow { transition: box-shadow 0.3s ease; }
+    .card-glow:hover { box-shadow: 0 0 40px rgba(139, 92, 246, 0.08); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #06070A; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/[0.06]">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet to-cyan flex items-center justify-center font-display font-bold text-sm">A</div>
+      <span class="font-display font-semibold text-lg tracking-tight">Adara</span>
+      <span class="text-muted-dim text-sm ml-1">Tester Onboard</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div id="network-badge" class="hidden items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08]">
+        <span id="network-dot" class="w-2 h-2 rounded-full"></span>
+        <span id="network-label"></span>
+      </div>
+      <div id="balances" class="hidden items-center gap-3 text-xs font-mono text-muted">
+        <span id="eth-bal"></span>
+        <span class="text-white/10">|</span>
+        <span id="usdc-bal"></span>
+      </div>
+      <button id="connect-btn" onclick="connectWallet()" class="btn-primary px-4 py-2 rounded-lg font-display font-medium text-sm">
+        Connect Wallet
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Main content -->
+<main class="pt-24 pb-16 px-6 max-w-4xl mx-auto">
+
+  <!-- Hero / Pre-connect -->
+  <div id="hero" class="text-center py-16">
+    <div class="gradient-mesh rounded-3xl p-12 mb-8">
+      <h1 class="font-display text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-violet via-cyan to-mint bg-clip-text text-transparent">
+        Welcome to Adara Devnet
+      </h1>
+      <p class="text-muted text-lg max-w-xl mx-auto mb-8">
+        This guided flow walks you through the full Adara Protocol tester experience.
+        No terminal needed — just MetaMask and button clicks.
+      </p>
+      <button onclick="addNetwork()" class="btn-secondary px-6 py-3 rounded-xl font-display font-medium mb-4 block mx-auto">
+        Add Adara Devnet to MetaMask
+      </button>
+      <p class="text-muted-dim text-sm">Then connect your wallet to begin</p>
+    </div>
+  </div>
+
+  <!-- Step Progress -->
+  <div id="stepper" class="hidden mb-12">
+    <div class="flex items-center justify-between max-w-3xl mx-auto px-4">
+      <div class="flex flex-col items-center gap-1.5" data-step="0">
+        <div class="step-dot w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-xs font-mono">1</div>
+        <span class="text-[10px] text-muted-dim font-medium uppercase tracking-wider">Register</span>
+      </div>
+      <div class="step-line flex-1 h-px bg-white/[0.08] mx-1" data-line="0"></div>
+      <div class="flex flex-col items-center gap-1.5" data-step="1">
+        <div class="step-dot w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-xs font-mono">2</div>
+        <span class="text-[10px] text-muted-dim font-medium uppercase tracking-wider">Venture</span>
+      </div>
+      <div class="step-line flex-1 h-px bg-white/[0.08] mx-1" data-line="1"></div>
+      <div class="flex flex-col items-center gap-1.5" data-step="2">
+        <div class="step-dot w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-xs font-mono">3</div>
+        <span class="text-[10px] text-muted-dim font-medium uppercase tracking-wider">Fund</span>
+      </div>
+      <div class="step-line flex-1 h-px bg-white/[0.08] mx-1" data-line="2"></div>
+      <div class="flex flex-col items-center gap-1.5" data-step="3">
+        <div class="step-dot w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-xs font-mono">4</div>
+        <span class="text-[10px] text-muted-dim font-medium uppercase tracking-wider">Task</span>
+      </div>
+      <div class="step-line flex-1 h-px bg-white/[0.08] mx-1" data-line="3"></div>
+      <div class="flex flex-col items-center gap-1.5" data-step="4">
+        <div class="step-dot w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-xs font-mono">5</div>
+        <span class="text-[10px] text-muted-dim font-medium uppercase tracking-wider">Claim</span>
+      </div>
+      <div class="step-line flex-1 h-px bg-white/[0.08] mx-1" data-line="4"></div>
+      <div class="flex flex-col items-center gap-1.5" data-step="5">
+        <div class="step-dot w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-xs font-mono">6</div>
+        <span class="text-[10px] text-muted-dim font-medium uppercase tracking-wider">Verify</span>
+      </div>
+      <div class="step-line flex-1 h-px bg-white/[0.08] mx-1" data-line="5"></div>
+      <div class="flex flex-col items-center gap-1.5" data-step="6">
+        <div class="step-dot w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center text-xs font-mono">7</div>
+        <span class="text-[10px] text-muted-dim font-medium uppercase tracking-wider">Earn</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step Cards Container -->
+  <div id="steps-container" class="hidden space-y-6">
+
+    <!-- Step 1: Register -->
+    <div id="step-register" class="glass rounded-2xl p-8 card-glow">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-violet/20 flex items-center justify-center text-violet font-display font-bold shrink-0">1</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Register as Agent</h2>
+          <p class="text-muted text-sm">Register your wallet as an agent on the Adara network. This is your on-chain identity that lets you create ventures and complete tasks.</p>
+        </div>
+      </div>
+      <div id="register-status"></div>
+      <button id="register-btn" onclick="doRegister()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
+        Register My Wallet
+      </button>
+      <div id="tier-check" class="hidden mt-4 p-4 rounded-xl bg-amber/10 border border-amber/20">
+        <p class="text-amber text-sm font-medium mb-2">Tier 2 required to create ventures</p>
+        <p class="text-muted text-sm mb-3">Your agent needs Tier 2 to create ventures. The operator will promote you — this usually takes a few minutes. You can still claim tasks on other testers' ventures while you wait.</p>
+        <button onclick="refreshTier()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium">
+          Refresh Tier
+        </button>
+        <span id="tier-display" class="ml-3 text-muted-dim text-sm font-mono"></span>
+      </div>
+    </div>
+
+    <!-- Step 2: Create Venture -->
+    <div id="step-venture" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-cyan/20 flex items-center justify-center text-cyan font-display font-bold shrink-0">2</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Create a Venture</h2>
+          <p class="text-muted text-sm">A venture is a project that publishes tasks for agents to complete. You'll be the admin and verifier.</p>
+        </div>
+      </div>
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Venture Name</label>
+          <input id="venture-name" type="text" value="My Test Venture" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="e.g. Research Project Alpha">
+        </div>
+      </div>
+      <div id="venture-status"></div>
+      <button id="venture-btn" onclick="doCreateVenture()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
+        Create Venture
+      </button>
+      <div id="venture-addresses" class="hidden mt-4"></div>
+    </div>
+
+    <!-- Step 3: Fund Budget -->
+    <div id="step-fund" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-mint/20 flex items-center justify-center text-mint font-display font-bold shrink-0">3</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Fund the Budget Vault</h2>
+          <p class="text-muted text-sm">Fund your venture's budget before opening tasks. This is where cash compensation comes from. These are test tokens with no real value.</p>
+        </div>
+      </div>
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Amount (USDC)</label>
+          <input id="fund-amount" type="number" value="10000" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono" placeholder="10000">
+        </div>
+      </div>
+      <div id="fund-status"></div>
+      <button id="fund-btn" onclick="doFundBudget()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
+        Approve &amp; Fund Budget
+      </button>
+    </div>
+
+    <!-- Step 4: Open Task -->
+    <div id="step-task" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-aurora-blue/20 flex items-center justify-center text-aurora-blue font-display font-bold shrink-0">4</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Open a Task</h2>
+          <p class="text-muted text-sm">Publish a task for other agents to claim and complete. Set the compensation and quality requirements.</p>
+        </div>
+      </div>
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Task Description</label>
+          <input id="task-desc" type="text" value="Review protocol documentation" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="What needs to be done?">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm text-muted mb-1.5 block">Cash Compensation (USDC)</label>
+            <input id="task-cash" type="number" value="2000" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono">
+          </div>
+          <div>
+            <label class="text-sm text-muted mb-1.5 block">CU Multiplier (%)</label>
+            <input id="task-cu" type="number" value="50" min="0" max="100" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono">
+          </div>
+        </div>
+      </div>
+      <div id="task-status"></div>
+      <button id="task-btn" onclick="doOpenTask()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
+        Draft &amp; Open Task
+      </button>
+    </div>
+
+    <!-- Step 5: Browse & Claim -->
+    <div id="step-claim" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-violet/20 flex items-center justify-center text-violet font-display font-bold shrink-0">5</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Claim a Task</h2>
+          <p class="text-muted text-sm">Enter another tester's venture address to see their open tasks. Claim one, do the work, and submit.</p>
+        </div>
+      </div>
+      <div class="space-y-4 mb-6">
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Venture Instance Address</label>
+          <input id="claim-vi-addr" type="text" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono text-sm" placeholder="0x... (paste address shared by another tester)">
+        </div>
+        <button onclick="loadClaimableTasks()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium">Load Open Tasks</button>
+        <div id="claimable-tasks"></div>
+      </div>
+      <div id="claim-status"></div>
+      <div id="claim-actions" class="hidden space-y-3">
+        <button id="start-btn" onclick="doStartTask()" class="btn-secondary px-6 py-3 rounded-xl font-medium w-full">Start Task</button>
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Deliverable Description</label>
+          <input id="deliverable-desc" type="text" value="Completed review with notes" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body">
+        </div>
+        <button id="submit-btn" onclick="doSubmitTask()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">Submit Work</button>
+      </div>
+    </div>
+
+    <!-- Step 6: Verify -->
+    <div id="step-verify" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-cyan/20 flex items-center justify-center text-cyan font-display font-bold shrink-0">6</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Verify a Submission</h2>
+          <p class="text-muted text-sm">Someone completed a task in your venture. Review and verify their work.</p>
+        </div>
+      </div>
+      <button onclick="loadSubmittedTasks()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium mb-4">Check for Submissions</button>
+      <div id="submitted-tasks"></div>
+      <div id="verify-status"></div>
+      <div id="verify-actions" class="hidden space-y-3">
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Quality Score (%)</label>
+          <input id="quality-score" type="number" value="85" min="0" max="100" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono">
+        </div>
+        <button id="verdict-btn" onclick="doVerdict()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">Approve &amp; Verify</button>
+        <button id="finalize-btn" onclick="doFinalize()" class="btn-secondary px-6 py-3 rounded-xl font-medium w-full hidden">Finalize Task</button>
+      </div>
+    </div>
+
+    <!-- Step 7: Claim Cash -->
+    <div id="step-earn" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-mint/20 flex items-center justify-center text-mint font-display font-bold shrink-0">7</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Claim Your Earnings</h2>
+          <p class="text-muted text-sm">Collect the cash compensation you earned from completing tasks.</p>
+        </div>
+      </div>
+      <div id="claimable-display" class="mb-4 p-4 rounded-xl bg-white/[0.03] font-mono text-sm text-muted"></div>
+      <div id="earn-status"></div>
+      <button id="earn-btn" onclick="doClaimCash()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
+        Claim Cash
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Status Panel -->
+  <div id="status-panel" class="hidden mt-12 glass rounded-2xl p-6">
+    <h3 class="font-display font-semibold text-sm uppercase tracking-wider text-muted-dim mb-4">Status</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div class="p-3 rounded-xl bg-white/[0.03]">
+        <div class="text-muted-dim text-xs mb-1">Agent ID</div>
+        <div id="status-agent" class="font-mono text-pearl">—</div>
+      </div>
+      <div class="p-3 rounded-xl bg-white/[0.03]">
+        <div class="text-muted-dim text-xs mb-1">Tier</div>
+        <div id="status-tier" class="font-mono text-pearl">—</div>
+      </div>
+      <div class="p-3 rounded-xl bg-white/[0.03]">
+        <div class="text-muted-dim text-xs mb-1">USDC Balance</div>
+        <div id="status-usdc" class="font-mono text-pearl">—</div>
+      </div>
+      <div class="p-3 rounded-xl bg-white/[0.03]">
+        <div class="text-muted-dim text-xs mb-1">ETH Balance</div>
+        <div id="status-eth" class="font-mono text-pearl">—</div>
+      </div>
+    </div>
+    <div id="status-ventures" class="mt-4 text-sm"></div>
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-white/[0.06] py-6 px-6 text-center text-muted-dim text-xs">
+  <p>Adara Protocol Devnet — All tokens are test tokens with no monetary value.
+    <a href="https://discord.gg/UBVGRdsD" target="_blank" class="text-cyan hover:underline ml-2">Discord</a>
+    <a href="https://github.com/Adara-Network/adara-v3-tester-release/issues" target="_blank" class="text-cyan hover:underline ml-2">Report Issue</a>
+  </p>
+</footer>
+
+<script>
+// ─── Contract Addresses ──────────────────────────────────────────────
+const CONTRACTS = {
+  USDC: '0xd757A66793c9559Cf3B1F2C1B1eA5CFC2C7b89A6',
+  AgentRegistry: '0x0c9c3EDe7ed5dd285BD2E38ea3ae43bae3D87260',
+  VentureFactoryV2: '0xAF4066afD9cB31a576ef672126b15d1eeea4A51b',
+};
+
+const RPC_URL = 'https://devnet.adara.network';
+const CHAIN_ID = 1981;
+const CHAIN_ID_HEX = '0x7BD';
+const USDC_DECIMALS = 18;
+
+// ─── ABI Fragments ───────────────────────────────────────────────────
+const ABI = {
+  registry: [
+    'function register(string, bytes32, tuple(bytes32 key, bytes value)[]) returns (uint256)',
+    'function agentIdOf(address) view returns (uint256)',
+    'function getTier(uint256) view returns (uint8)',
+    'error AlreadyRegistered()',
+  ],
+  factory: [
+    'function createVenture(tuple(address stablecoin, uint16 feeBps, uint8 requiredTierToJoin, uint8 requiredTierToCreate, uint8 mode, uint32 tsvVersion, bytes32 tsvWeightsHash, bytes32 ventureMetadataHash, string ventureURI, bool cuTransferable, bytes modeConfig, bool budgetVaultEnabled)) returns (uint256, address)',
+    'event VentureCreatedV2(uint256 indexed ventureId, address indexed creator, address ventureInstance, address contributionUnit, address distributionVault, address verificationOracle, address operatingBudgetVault, uint8 mode, uint32 factoryVersion, uint16 feeBps, bytes32 metadataHash)',
+  ],
+  vi: [
+    'function draftTask(bytes32 metadataHash, string metadataURI) returns (uint256)',
+    'function openTaskWithComp(uint256 taskId, uint32 tsvBps, uint32 minQualityBps, bool isBootstrap, uint64 deadlineAt, uint16 stakeBps, tuple(uint96 cashAmount, uint16 cuMultiplierBps)[] options)',
+    'function claimTaskWithComp(uint256 taskId, uint8 optionId)',
+    'function startTask(uint256 taskId)',
+    'function submitTask(uint256 taskId, bytes32 deliverableHash, string deliverableURI)',
+    'function finalizeTask(uint256 taskId)',
+    'function setFinalizationReviewSeconds(uint64)',
+    'function getTask(uint256 taskId) view returns (tuple(uint8 state, uint256 agentId, bytes32 metadataHash, uint32 tsvBps, uint32 minQualityBps, bool isBootstrap, uint64 createdAt, uint64 deadlineAt, address stakeToken, address publisher, bytes32 deliverableHash, string deliverableURI, uint32 qualityBps, uint32 slashedBps, uint256 stakeAmount, uint256 returnedStake, uint256 slashedStake))',
+    'function taskCount() view returns (uint256)',
+  ],
+  oracle: [
+    'function VERIFIER_ROLE() view returns (bytes32)',
+    'function grantRole(bytes32 role, address account)',
+    'function submitVerdict(uint256, bool, uint32, string, bytes32)',
+  ],
+  budget: [
+    'function fundBudget(uint256 amount, bytes32 metadataHash)',
+    'function claimCash() returns (uint256)',
+    'function getClaimable(address) view returns (uint256)',
+  ],
+  erc20: [
+    'function approve(address spender, uint256 amount) returns (bool)',
+    'function balanceOf(address) view returns (uint256)',
+  ],
+  cu: [
+    'function balanceOf(address) view returns (uint256)',
+  ],
+};
+
+// ─── Revert Reasons ──────────────────────────────────────────────────
+const REVERT_MESSAGES = {
+  'AlreadyRegistered': "You're already registered! Skip to Step 2.",
+  'InvalidMetadataHash': 'Something went wrong with the venture name. Try again.',
+  'InsufficientAvailable': 'You need to fund the budget vault first (Step 3).',
+  'TierTooLow': "Your agent tier isn't high enough yet. Contact the operator.",
+  'UnregisteredAgent': 'You need to register first (Step 1).',
+  'AgentBanned': 'This agent has been banned from the network.',
+  'VoterNotEligible': 'Your credit score needs to be above zero to vote.',
+  'NothingToClaim': 'No pending earnings to claim right now.',
+  'TaskNotReserved': "This task wasn't set up correctly. Contact the venture creator.",
+  'InvalidTsvBps': 'Invalid TSV weight value.',
+  'InvalidMinQualityBps': 'Invalid minimum quality value.',
+  'ReviewWindowNotElapsed': 'The review window has not elapsed yet. Wait a moment.',
+};
+
+// ─── State ───────────────────────────────────────────────────────────
+let provider, signer, userAddress;
+let state = loadState();
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('adara-tester') || '{}');
+    return s.address ? s : { stepsCompleted: [], ventures: [], claimedTasks: [] };
+  } catch { return { stepsCompleted: [], ventures: [], claimedTasks: [] }; }
+}
+
+function saveState() {
+  localStorage.setItem('adara-tester', JSON.stringify(state));
+}
+
+function completeStep(name) {
+  if (!state.stepsCompleted.includes(name)) {
+    state.stepsCompleted.push(name);
+    saveState();
+  }
+  updateUI();
+}
+
+// ─── Wallet Connection ───────────────────────────────────────────────
+async function addNetwork() {
+  if (!window.ethereum) { alert('Please install MetaMask first.'); return; }
+  try {
+    await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
+      chainId: CHAIN_ID_HEX,
+      chainName: 'Adara Devnet',
+      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+      rpcUrls: [RPC_URL],
+    }]});
+    showSuccess('network-badge', 'Network added!');
+  } catch (e) { console.error(e); }
+}
+
+async function connectWallet() {
+  if (!window.ethereum) { alert('Please install MetaMask first.'); return; }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+
+    state.address = userAddress;
+    saveState();
+
+    document.getElementById('connect-btn').textContent = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
+    document.getElementById('connect-btn').onclick = null;
+
+    // Network listener
+    window.ethereum.on('chainChanged', () => location.reload());
+    window.ethereum.on('accountsChanged', () => location.reload());
+
+    await checkNetwork();
+    await updateBalances();
+    await checkRegistration();
+    updateUI();
+  } catch (e) { console.error('Connection failed:', e); }
+}
+
+async function checkNetwork() {
+  const net = await provider.getNetwork();
+  const badge = document.getElementById('network-badge');
+  const dot = document.getElementById('network-dot');
+  const label = document.getElementById('network-label');
+  badge.classList.remove('hidden');
+  badge.classList.add('flex');
+
+  if (Number(net.chainId) === CHAIN_ID) {
+    dot.className = 'w-2 h-2 rounded-full bg-mint';
+    label.textContent = 'Adara Devnet';
+  } else {
+    dot.className = 'w-2 h-2 rounded-full bg-red-500';
+    label.innerHTML = 'Wrong Network <button onclick="switchNetwork()" class="text-cyan underline ml-1">Switch</button>';
+  }
+}
+
+async function switchNetwork() {
+  try {
+    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
+  } catch (e) {
+    if (e.code === 4902) await addNetwork();
+  }
+}
+
+async function updateBalances() {
+  if (!provider || !userAddress) return;
+  try {
+    const ethBal = await provider.getBalance(userAddress);
+    const usdc = new ethers.Contract(CONTRACTS.USDC, ABI.erc20, provider);
+    const usdcBal = await usdc.balanceOf(userAddress);
+
+    const ethStr = parseFloat(ethers.formatEther(ethBal)).toFixed(4);
+    const usdcStr = parseFloat(ethers.formatUnits(usdcBal, USDC_DECIMALS)).toLocaleString();
+
+    document.getElementById('balances').classList.remove('hidden');
+    document.getElementById('balances').classList.add('flex');
+    document.getElementById('eth-bal').textContent = ethStr + ' ETH';
+    document.getElementById('usdc-bal').textContent = usdcStr + ' USDC';
+    document.getElementById('status-eth').textContent = ethStr + ' ETH';
+    document.getElementById('status-usdc').textContent = usdcStr + ' USDC';
+  } catch (e) { console.error('Balance fetch failed:', e); }
+}
+
+// ─── Registration Check ──────────────────────────────────────────────
+async function checkRegistration() {
+  const registry = new ethers.Contract(CONTRACTS.AgentRegistry, ABI.registry, provider);
+  const agentId = await registry.agentIdOf(userAddress);
+  state.agentId = Number(agentId);
+  if (state.agentId > 0) {
+    const tier = await registry.getTier(agentId);
+    state.tier = Number(tier);
+    completeStep('register');
+    document.getElementById('status-agent').textContent = '#' + state.agentId;
+    document.getElementById('status-tier').textContent = 'Tier ' + state.tier;
+    if (state.tier < 2) {
+      document.getElementById('tier-check').classList.remove('hidden');
+      document.getElementById('tier-display').textContent = 'Current: Tier ' + state.tier;
+    }
+  }
+  saveState();
+}
+
+async function refreshTier() {
+  const registry = new ethers.Contract(CONTRACTS.AgentRegistry, ABI.registry, provider);
+  const tier = await registry.getTier(state.agentId);
+  state.tier = Number(tier);
+  saveState();
+  document.getElementById('tier-display').textContent = 'Current: Tier ' + state.tier;
+  document.getElementById('status-tier').textContent = 'Tier ' + state.tier;
+  if (state.tier >= 2) {
+    document.getElementById('tier-check').classList.add('hidden');
+    updateUI();
+  }
+}
+
+// ─── UI Updates ──────────────────────────────────────────────────────
+function updateUI() {
+  if (!userAddress) return;
+  document.getElementById('hero').classList.add('hidden');
+  document.getElementById('stepper').classList.remove('hidden');
+  document.getElementById('steps-container').classList.remove('hidden');
+  document.getElementById('status-panel').classList.remove('hidden');
+
+  const steps = ['register', 'createVenture', 'fundBudget', 'openTask', 'claimTask', 'verify', 'claimCash'];
+  const stepEls = ['step-register', 'step-venture', 'step-fund', 'step-task', 'step-claim', 'step-verify', 'step-earn'];
+  const completed = state.stepsCompleted;
+
+  steps.forEach((step, i) => {
+    const dot = document.querySelector(`[data-step="${i}"] .step-dot`);
+    const line = document.querySelector(`[data-line="${i}"]`);
+    const card = document.getElementById(stepEls[i]);
+
+    if (completed.includes(step)) {
+      dot.classList.add('completed');
+      dot.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+      if (line) line.classList.add('completed');
+      card.classList.remove('opacity-40', 'pointer-events-none');
+    } else if (i === 0 || completed.includes(steps[i - 1]) || (i === 1 && completed.includes('register') && state.tier >= 2)) {
+      dot.classList.add('active');
+      card.classList.remove('opacity-40', 'pointer-events-none');
+    }
+  });
+
+  // Special: step 2 needs tier >= 2
+  if (completed.includes('register') && state.tier < 2) {
+    document.getElementById('step-venture').classList.add('opacity-40', 'pointer-events-none');
+  }
+
+  // Steps 5-7 always accessible once venture is created
+  if (completed.includes('register')) {
+    ['step-claim', 'step-verify', 'step-earn'].forEach(id => {
+      document.getElementById(id).classList.remove('opacity-40', 'pointer-events-none');
+    });
+  }
+
+  // Show ventures in status
+  if (state.ventures && state.ventures.length > 0) {
+    const html = state.ventures.map(v => `
+      <div class="p-3 rounded-xl bg-white/[0.03] mt-2">
+        <div class="text-muted-dim text-xs mb-1">Venture #${v.ventureId}</div>
+        <div class="font-mono text-xs text-muted">${v.vi.slice(0,10)}...${v.vi.slice(-8)}</div>
+      </div>
+    `).join('');
+    document.getElementById('status-ventures').innerHTML = '<div class="text-muted-dim text-xs mb-1">Your Ventures</div>' + html;
+  }
+}
+
+// ─── TX Helpers ──────────────────────────────────────────────────────
+function showLoading(elId, msg) {
+  document.getElementById(elId).innerHTML = `
+    <div class="tx-status flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] mb-4">
+      <svg class="w-5 h-5 text-violet spinner" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" class="opacity-75"/></svg>
+      <span class="text-muted text-sm">${msg}</span>
+    </div>`;
+}
+
+function showSuccess(elId, msg, txHash) {
+  const hashLink = txHash ? `<span class="font-mono text-xs text-muted-dim block mt-1">tx: ${txHash.slice(0,10)}...${txHash.slice(-8)}</span>` : '';
+  document.getElementById(elId).innerHTML = `
+    <div class="tx-status flex items-start gap-3 p-3 rounded-xl bg-mint/10 border border-mint/20 mb-4">
+      <svg class="w-5 h-5 text-mint shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <div><span class="text-mint text-sm font-medium">${msg}</span>${hashLink}</div>
+    </div>`;
+}
+
+function showError(elId, error) {
+  let msg = 'Transaction failed';
+  const errStr = error.message || error.toString();
+
+  // Try to decode known reverts
+  for (const [key, friendly] of Object.entries(REVERT_MESSAGES)) {
+    if (errStr.includes(key)) { msg = friendly; break; }
+  }
+
+  // Check for user rejection
+  if (errStr.includes('user rejected') || errStr.includes('ACTION_REJECTED')) {
+    msg = 'Transaction cancelled by user.';
+  }
+
+  // Fallback: show raw error
+  if (msg === 'Transaction failed') {
+    const match = errStr.match(/reason="([^"]+)"/);
+    if (match) msg = match[1];
+    else if (errStr.includes('0x')) {
+      msg = 'Something unexpected happened. Screenshot this and post in Discord: ' + errStr.slice(0, 200);
+    }
+  }
+
+  document.getElementById(elId).innerHTML = `
+    <div class="tx-status flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
+      <svg class="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      <span class="text-red-300 text-sm">${msg}</span>
+    </div>`;
+}
+
+async function sendTx(statusEl, description, txPromise) {
+  showLoading(statusEl, description + '...');
+  try {
+    const tx = await txPromise;
+    showLoading(statusEl, 'Waiting for confirmation...');
+    const receipt = await tx.wait();
+    return receipt;
+  } catch (e) {
+    showError(statusEl, e);
+    throw e;
+  }
+}
+
+// ─── Step 1: Register ────────────────────────────────────────────────
+async function doRegister() {
+  const registry = new ethers.Contract(CONTRACTS.AgentRegistry, ABI.registry, signer);
+  try {
+    const receipt = await sendTx('register-status', 'Registering your wallet',
+      registry.register('ipfs://tester-profile', ethers.ZeroHash, [])
+    );
+    showSuccess('register-status', 'Registered successfully!', receipt.hash);
+    await checkRegistration();
+  } catch (e) {
+    if (e.message?.includes('AlreadyRegistered')) {
+      showSuccess('register-status', "You're already registered!");
+      await checkRegistration();
+    }
+  }
+}
+
+// ─── Step 2: Create Venture ──────────────────────────────────────────
+async function doCreateVenture() {
+  const name = document.getElementById('venture-name').value || 'Test Venture';
+  const factory = new ethers.Contract(CONTRACTS.VentureFactoryV2, ABI.factory, signer);
+
+  const metaHash = ethers.keccak256(ethers.toUtf8Bytes(name));
+  const weightsHash = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
+    ['uint32','uint32','uint32','uint32'], [2500,2500,2500,2500]
+  ));
+  const modeConfig = ethers.AbiCoder.defaultAbiCoder().encode(['uint64','uint32'], [0n, 0]);
+
+  try {
+    showLoading('venture-status', 'Creating venture (1/3)...');
+    const tx = await factory.createVenture({
+      stablecoin: CONTRACTS.USDC,
+      feeBps: 200,
+      requiredTierToJoin: 0,
+      requiredTierToCreate: 2,
+      mode: 0,
+      tsvVersion: 1,
+      tsvWeightsHash: weightsHash,
+      ventureMetadataHash: metaHash,
+      ventureURI: 'ipfs://' + name.replace(/\s+/g, '-').toLowerCase(),
+      cuTransferable: false,
+      modeConfig: modeConfig,
+      budgetVaultEnabled: true,
+    });
+
+    showLoading('venture-status', 'Waiting for confirmation...');
+    const receipt = await tx.wait();
+
+    // Parse VentureCreatedV2 event
+    const log = receipt.logs.find(l => {
+      try { return factory.interface.parseLog({ topics: l.topics, data: l.data })?.name === 'VentureCreatedV2'; } catch { return false; }
+    });
+    const parsed = factory.interface.parseLog({ topics: log.topics, data: log.data });
+
+    const venture = {
+      ventureId: Number(parsed.args.ventureId),
+      vi: parsed.args.ventureInstance,
+      cu: parsed.args.contributionUnit,
+      dv: parsed.args.distributionVault,
+      oracle: parsed.args.verificationOracle,
+      budgetVault: parsed.args.operatingBudgetVault,
+      funded: false,
+      tasks: [],
+    };
+
+    // Auto-grant VERIFIER_ROLE
+    showLoading('venture-status', 'Granting verifier role (2/3)...');
+    const oracle = new ethers.Contract(venture.oracle, ABI.oracle, signer);
+    const VERIFIER = await oracle.VERIFIER_ROLE();
+    const grantTx = await oracle.grantRole(VERIFIER, userAddress);
+    await grantTx.wait();
+
+    // Set review window
+    showLoading('venture-status', 'Setting review window (3/3)...');
+    const vi = new ethers.Contract(venture.vi, ABI.vi, signer);
+    const rwTx = await vi.setFinalizationReviewSeconds(60);
+    await rwTx.wait();
+
+    state.ventures.push(venture);
+    saveState();
+
+    showSuccess('venture-status', `Venture #${venture.ventureId} created!`, receipt.hash);
+
+    // Show addresses
+    document.getElementById('venture-addresses').classList.remove('hidden');
+    document.getElementById('venture-addresses').innerHTML = `
+      <div class="p-4 rounded-xl bg-white/[0.03] text-xs font-mono space-y-1.5">
+        <div class="text-muted-dim text-[10px] uppercase tracking-wider mb-2">Venture Addresses</div>
+        <div><span class="text-muted-dim">Instance:</span> <span class="text-pearl">${venture.vi}</span></div>
+        <div><span class="text-muted-dim">Oracle:</span> <span class="text-pearl">${venture.oracle}</span></div>
+        <div><span class="text-muted-dim">Budget:</span> <span class="text-pearl">${venture.budgetVault}</span></div>
+        <div><span class="text-muted-dim">CU Token:</span> <span class="text-pearl">${venture.cu}</span></div>
+      </div>`;
+
+    completeStep('createVenture');
+  } catch (e) {
+    if (!document.getElementById('venture-status').innerHTML.includes('bg-red')) {
+      showError('venture-status', e);
+    }
+  }
+}
+
+// ─── Step 3: Fund Budget ─────────────────────────────────────────────
+async function doFundBudget() {
+  const v = state.ventures[state.ventures.length - 1];
+  if (!v) { showError('fund-status', { message: 'Create a venture first.' }); return; }
+
+  const amount = document.getElementById('fund-amount').value || '10000';
+  const amountWei = ethers.parseUnits(amount, USDC_DECIMALS);
+
+  try {
+    showLoading('fund-status', 'Approving USDC (1/2)...');
+    const usdc = new ethers.Contract(CONTRACTS.USDC, ABI.erc20, signer);
+    const approveTx = await usdc.approve(v.budgetVault, amountWei);
+    await approveTx.wait();
+
+    showLoading('fund-status', 'Funding budget vault (2/2)...');
+    const budget = new ethers.Contract(v.budgetVault, ABI.budget, signer);
+    const fundTx = await budget.fundBudget(amountWei, ethers.keccak256(ethers.toUtf8Bytes('fund-' + Date.now())));
+    const receipt = await fundTx.wait();
+
+    v.funded = true;
+    saveState();
+    await updateBalances();
+    showSuccess('fund-status', `Funded ${amount} USDC!`, receipt.hash);
+    completeStep('fundBudget');
+  } catch (e) {
+    if (!document.getElementById('fund-status').innerHTML.includes('bg-red')) {
+      showError('fund-status', e);
+    }
+  }
+}
+
+// ─── Step 4: Open Task ───────────────────────────────────────────────
+async function doOpenTask() {
+  const v = state.ventures[state.ventures.length - 1];
+  if (!v) { showError('task-status', { message: 'Create a venture first.' }); return; }
+
+  const desc = document.getElementById('task-desc').value || 'Test task';
+  const cashAmount = document.getElementById('task-cash').value || '2000';
+  const cuMult = document.getElementById('task-cu').value || '50';
+
+  const cashWei = ethers.parseUnits(cashAmount, USDC_DECIMALS);
+  const cuBps = parseInt(cuMult) * 100;
+  const metaHash = ethers.keccak256(ethers.toUtf8Bytes(desc));
+
+  try {
+    const vi = new ethers.Contract(v.vi, ABI.vi, signer);
+
+    showLoading('task-status', 'Drafting task (1/2)...');
+    const draftTx = await vi.draftTask(metaHash, 'ipfs://' + desc.replace(/\s+/g, '-').toLowerCase());
+    const draftReceipt = await draftTx.wait();
+
+    // Get task count to determine taskId (it's the latest draft)
+    const taskCount = await vi.taskCount();
+    const taskId = Number(taskCount) - 1;
+
+    showLoading('task-status', 'Opening task with compensation (2/2)...');
+    const openTx = await vi.openTaskWithComp(
+      taskId, 6000, 5000, false, 0, 0,
+      [{ cashAmount: cashWei, cuMultiplierBps: cuBps }]
+    );
+    const receipt = await openTx.wait();
+
+    v.tasks.push({ taskId, state: 'OPEN', cashAmount });
+    saveState();
+
+    showSuccess('task-status', `Task #${taskId} is open!`, receipt.hash);
+    completeStep('openTask');
+  } catch (e) {
+    if (!document.getElementById('task-status').innerHTML.includes('bg-red')) {
+      showError('task-status', e);
+    }
+  }
+}
+
+// ─── Step 5: Claim Task ──────────────────────────────────────────────
+let claimVI, claimTaskId;
+
+async function loadClaimableTasks() {
+  const addr = document.getElementById('claim-vi-addr').value.trim();
+  if (!addr || !ethers.isAddress(addr)) {
+    document.getElementById('claimable-tasks').innerHTML = '<p class="text-red-400 text-sm">Enter a valid address.</p>';
+    return;
+  }
+
+  try {
+    claimVI = new ethers.Contract(addr, ABI.vi, signer);
+    const count = await claimVI.taskCount();
+    const tasks = [];
+
+    for (let i = 0; i < Number(count) && i < 20; i++) {
+      const t = await claimVI.getTask(i);
+      if (Number(t.state) === 1) { // OPEN
+        tasks.push({ id: i, tsvBps: Number(t.tsvBps), minQuality: Number(t.minQualityBps) });
+      }
+    }
+
+    if (tasks.length === 0) {
+      document.getElementById('claimable-tasks').innerHTML = '<p class="text-muted text-sm">No open tasks found on this venture.</p>';
+    } else {
+      document.getElementById('claimable-tasks').innerHTML = tasks.map(t => `
+        <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] mt-2">
+          <div class="text-sm"><span class="text-muted-dim">Task #${t.id}</span> <span class="text-muted text-xs">TSV: ${t.tsvBps/100}%, Min Quality: ${t.minQuality/100}%</span></div>
+          <button onclick="claimTask(${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium">Claim</button>
+        </div>
+      `).join('');
+    }
+  } catch (e) { showError('claim-status', e); }
+}
+
+async function claimTask(taskId) {
+  claimTaskId = taskId;
+  try {
+    const receipt = await sendTx('claim-status', 'Claiming task #' + taskId,
+      claimVI.claimTaskWithComp(taskId, 0)
+    );
+    showSuccess('claim-status', `Task #${taskId} claimed!`, receipt.hash);
+    state.claimedTasks.push({ ventureAddress: await claimVI.getAddress(), taskId, state: 'CLAIMED' });
+    saveState();
+    document.getElementById('claim-actions').classList.remove('hidden');
+  } catch (e) {
+    if (!document.getElementById('claim-status').innerHTML.includes('bg-red')) {
+      showError('claim-status', e);
+    }
+  }
+}
+
+async function doStartTask() {
+  try {
+    const receipt = await sendTx('claim-status', 'Starting task',
+      claimVI.startTask(claimTaskId)
+    );
+    showSuccess('claim-status', 'Task started!', receipt.hash);
+  } catch (e) { if (!document.getElementById('claim-status').innerHTML.includes('bg-red')) showError('claim-status', e); }
+}
+
+async function doSubmitTask() {
+  const desc = document.getElementById('deliverable-desc').value || 'Completed';
+  const hash = ethers.keccak256(ethers.toUtf8Bytes(desc));
+  try {
+    const receipt = await sendTx('claim-status', 'Submitting work',
+      claimVI.submitTask(claimTaskId, hash, 'ipfs://' + desc.replace(/\s+/g, '-'))
+    );
+    showSuccess('claim-status', 'Work submitted!', receipt.hash);
+    const ct = state.claimedTasks.find(t => t.taskId === claimTaskId);
+    if (ct) ct.state = 'SUBMITTED';
+    saveState();
+    completeStep('claimTask');
+  } catch (e) { if (!document.getElementById('claim-status').innerHTML.includes('bg-red')) showError('claim-status', e); }
+}
+
+// ─── Step 6: Verify ──────────────────────────────────────────────────
+let verifyTaskId;
+
+async function loadSubmittedTasks() {
+  const v = state.ventures[state.ventures.length - 1];
+  if (!v) { document.getElementById('submitted-tasks').innerHTML = '<p class="text-muted text-sm">Create a venture first.</p>'; return; }
+
+  try {
+    const vi = new ethers.Contract(v.vi, ABI.vi, provider);
+    const count = await vi.taskCount();
+    const tasks = [];
+
+    for (let i = 0; i < Number(count) && i < 20; i++) {
+      const t = await vi.getTask(i);
+      if (Number(t.state) === 4) { // SUBMITTED
+        tasks.push({ id: i, agentId: Number(t.agentId) });
+      }
+    }
+
+    if (tasks.length === 0) {
+      document.getElementById('submitted-tasks').innerHTML = '<p class="text-muted text-sm">No submitted tasks waiting for review.</p>';
+    } else {
+      document.getElementById('submitted-tasks').innerHTML = tasks.map(t => `
+        <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] mt-2 mb-2">
+          <span class="text-sm"><span class="text-muted-dim">Task #${t.id}</span> <span class="text-muted text-xs">by Agent #${t.agentId}</span></span>
+          <button onclick="selectVerifyTask(${t.id})" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-medium">Review</button>
+        </div>
+      `).join('');
+    }
+  } catch (e) { showError('verify-status', e); }
+}
+
+function selectVerifyTask(taskId) {
+  verifyTaskId = taskId;
+  document.getElementById('verify-actions').classList.remove('hidden');
+}
+
+async function doVerdict() {
+  const v = state.ventures[state.ventures.length - 1];
+  const quality = parseInt(document.getElementById('quality-score').value || '85') * 100;
+  const evidenceHash = ethers.keccak256(ethers.toUtf8Bytes('verdict-' + verifyTaskId + '-' + Date.now()));
+
+  try {
+    const oracle = new ethers.Contract(v.oracle, ABI.oracle, signer);
+    const receipt = await sendTx('verify-status', 'Submitting verdict',
+      oracle.submitVerdict(verifyTaskId, true, quality, 'ipfs://verdict-' + verifyTaskId, evidenceHash)
+    );
+    showSuccess('verify-status', 'Verdict submitted!', receipt.hash);
+    document.getElementById('finalize-btn').classList.remove('hidden');
+    completeStep('verify');
+  } catch (e) { if (!document.getElementById('verify-status').innerHTML.includes('bg-red')) showError('verify-status', e); }
+}
+
+async function doFinalize() {
+  const v = state.ventures[state.ventures.length - 1];
+  try {
+    const vi = new ethers.Contract(v.vi, ABI.vi, signer);
+    const receipt = await sendTx('verify-status', 'Finalizing task',
+      vi.finalizeTask(verifyTaskId)
+    );
+    showSuccess('verify-status', 'Task finalized!', receipt.hash);
+  } catch (e) { if (!document.getElementById('verify-status').innerHTML.includes('bg-red')) showError('verify-status', e); }
+}
+
+// ─── Step 7: Claim Cash ──────────────────────────────────────────────
+async function doClaimCash() {
+  // Find the budget vault — could be from a claimed task or own venture
+  let budgetAddr;
+  if (state.claimedTasks.length > 0) {
+    // Try to find the budget vault from the venture we claimed on
+    const ct = state.claimedTasks[state.claimedTasks.length - 1];
+    // User needs to enter the budget vault address or we find it from factory events
+    // For simplicity, check own ventures first
+  }
+  if (state.ventures.length > 0) {
+    budgetAddr = state.ventures[state.ventures.length - 1].budgetVault;
+  }
+
+  if (!budgetAddr) {
+    showError('earn-status', { message: 'No budget vault found. Complete a task first.' });
+    return;
+  }
+
+  try {
+    const budget = new ethers.Contract(budgetAddr, ABI.budget, signer);
+    const claimable = await budget.getClaimable(userAddress);
+    document.getElementById('claimable-display').textContent = 'Claimable: ' + parseFloat(ethers.formatUnits(claimable, USDC_DECIMALS)).toLocaleString() + ' USDC';
+
+    if (claimable === 0n) {
+      showError('earn-status', { message: 'NothingToClaim' });
+      return;
+    }
+
+    const receipt = await sendTx('earn-status', 'Claiming cash earnings',
+      budget.claimCash()
+    );
+
+    await updateBalances();
+    showSuccess('earn-status', 'Cash claimed!', receipt.hash);
+    completeStep('claimCash');
+    launchConfetti();
+  } catch (e) {
+    if (!document.getElementById('earn-status').innerHTML.includes('bg-red')) {
+      showError('earn-status', e);
+    }
+  }
+}
+
+// ─── Confetti ────────────────────────────────────────────────────────
+function launchConfetti() {
+  const colors = ['#8B5CF6', '#36E3FF', '#3EE8B5', '#FFB84D', '#4F7CFF'];
+  for (let i = 0; i < 40; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.width = (Math.random() * 8 + 4) + 'px';
+    el.style.height = (Math.random() * 8 + 4) + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    el.style.animationDelay = Math.random() * 2 + 's';
+    el.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+}
+
+// ─── Init ────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  if (window.ethereum && state.address) {
+    try { await connectWallet(); } catch {}
+  }
+
+  // Update claimable display if we have a budget vault
+  if (state.ventures?.length > 0 && provider) {
+    try {
+      const budget = new ethers.Contract(state.ventures[state.ventures.length - 1].budgetVault, ABI.budget, provider);
+      const claimable = await budget.getClaimable(state.address);
+      document.getElementById('claimable-display').textContent = 'Claimable: ' + parseFloat(ethers.formatUnits(claimable, USDC_DECIMALS)).toLocaleString() + ' USDC';
+    } catch {}
+  }
+});
+</script>
+
+</body>
+</html>
