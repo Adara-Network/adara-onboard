@@ -662,9 +662,22 @@ function showError(elId, error) {
   let msg = 'Transaction failed';
   const errStr = error.message || error.toString();
 
-  // Try to decode known reverts
-  for (const [key, friendly] of Object.entries(REVERT_MESSAGES)) {
-    if (errStr.includes(key)) { msg = friendly; break; }
+  // Try to decode known reverts — check both name and selector
+  const SELECTORS = {
+    '0x3a81d6fc': 'AlreadyRegistered',
+    '0xfac5ca33': 'InvalidMetadataHash',
+    '0x1cf4d023': 'UnregisteredAgent',
+    '0xa8d696e5': 'VentureNotRegistered',
+  };
+  // Match by selector in data field
+  for (const [sel, name] of Object.entries(SELECTORS)) {
+    if (errStr.includes(sel)) { msg = REVERT_MESSAGES[name] || name; break; }
+  }
+  // Match by name string
+  if (msg === 'Transaction failed') {
+    for (const [key, friendly] of Object.entries(REVERT_MESSAGES)) {
+      if (errStr.includes(key)) { msg = friendly; break; }
+    }
   }
 
   // Check for user rejection
@@ -711,7 +724,8 @@ async function doRegister() {
     showSuccess('register-status', 'Registered successfully!', receipt.hash);
     await checkRegistration();
   } catch (e) {
-    if (e.message?.includes('AlreadyRegistered')) {
+    const eStr = e.message || e.toString();
+    if (eStr.includes('AlreadyRegistered') || eStr.includes('0x3a81d6fc') || eStr.includes('already registered')) {
       showSuccess('register-status', "You're already registered!");
       await checkRegistration();
     }
