@@ -413,7 +413,7 @@ const ABI = {
     'function finalizeTask(uint256 taskId)',
     'function setFinalizationReviewSeconds(uint64)',
     'function getTask(uint256 taskId) view returns (tuple(uint8 state, uint256 agentId, bytes32 metadataHash, uint32 tsvBps, uint32 minQualityBps, bool isBootstrap, uint64 createdAt, uint64 deadlineAt, address stakeToken, address publisher, bytes32 deliverableHash, string deliverableURI, uint32 qualityBps, uint32 slashedBps, uint256 stakeAmount, uint256 returnedStake, uint256 slashedStake))',
-    'function taskCount() view returns (uint256)',
+    'function nextTaskId() view returns (uint256)',
   ],
   oracle: [
     'function VERIFIER_ROLE() view returns (bytes32)',
@@ -869,7 +869,7 @@ async function doOpenTask() {
     const draftReceipt = await draftTx.wait();
 
     // Get task count to determine taskId (it's the latest draft)
-    const taskCount = await vi.taskCount();
+    const taskCount = await vi.nextTaskId();
     const taskId = Number(taskCount) - 1;
 
     showLoading('task-status', 'Opening task with compensation (2/2)...');
@@ -903,7 +903,7 @@ async function loadClaimableTasks() {
 
   try {
     claimVI = new ethers.Contract(addr, ABI.vi, signer);
-    const count = await claimVI.taskCount();
+    const count = await claimVI.nextTaskId();
     const tasks = [];
 
     for (let i = 0; i < Number(count) && i < 20; i++) {
@@ -976,7 +976,7 @@ async function loadSubmittedTasks() {
 
   try {
     const vi = new ethers.Contract(v.vi, ABI.vi, provider);
-    const count = await vi.taskCount();
+    const count = await vi.nextTaskId();
     const tasks = [];
 
     for (let i = 0; i < Number(count) && i < 20; i++) {
