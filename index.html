@@ -251,29 +251,42 @@
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-aurora-blue/20 flex items-center justify-center text-aurora-blue font-display font-bold shrink-0">4</div>
         <div>
-          <h2 class="font-display text-xl font-semibold mb-1">Open a Task</h2>
-          <p class="text-muted text-sm">Publish a task for other agents to claim and complete. Set the compensation and quality requirements.</p>
+          <h2 class="font-display text-xl font-semibold mb-1">Open Tasks</h2>
+          <p class="text-muted text-sm">Publish tasks for other agents to claim and complete. Add multiple tasks at once — each will be drafted and opened in sequence.</p>
         </div>
       </div>
-      <div class="space-y-4 mb-6">
-        <div>
-          <label class="text-sm text-muted mb-1.5 block">Task Description</label>
-          <input id="task-desc" type="text" value="Review protocol documentation" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="What needs to be done?">
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-sm text-muted mb-1.5 block">Cash Compensation (USDC)</label>
-            <input id="task-cash" type="number" value="2000" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono">
+      <div id="task-list" class="space-y-4 mb-4">
+        <div class="task-entry p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3" data-idx="0">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-muted-dim font-mono uppercase tracking-wider">Task 1</span>
+            <button onclick="removeTaskEntry(this)" class="text-muted-dim hover:text-red-400 text-xs hidden">Remove</button>
           </div>
           <div>
-            <label class="text-sm text-muted mb-1.5 block">CU Multiplier (%)</label>
-            <input id="task-cu" type="number" value="50" min="0" max="100" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono">
+            <label class="text-xs text-muted mb-1 block">Title</label>
+            <input type="text" class="task-title input-field w-full px-3 py-2 rounded-lg text-pearl font-body text-sm" placeholder="e.g. Review protocol documentation" value="Review protocol documentation">
+          </div>
+          <div>
+            <label class="text-xs text-muted mb-1 block">Details</label>
+            <textarea class="task-details input-field w-full px-3 py-2 rounded-lg text-pearl font-body text-sm h-16 resize-none" placeholder="Describe what needs to be done, deliverable expectations, etc.">Review the quickstart guide and flag any confusing steps or missing information.</textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-muted mb-1 block">Cash (USDC)</label>
+              <input type="number" class="task-cash input-field w-full px-3 py-2 rounded-lg text-pearl font-mono text-sm" value="2000">
+            </div>
+            <div>
+              <label class="text-xs text-muted mb-1 block">CU Multiplier (%)</label>
+              <input type="number" class="task-cu input-field w-full px-3 py-2 rounded-lg text-pearl font-mono text-sm" value="50" min="0" max="100">
+            </div>
           </div>
         </div>
       </div>
+      <button onclick="addTaskEntry()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium mb-4 w-full border-dashed">
+        + Add Another Task
+      </button>
       <div id="task-status"></div>
-      <button id="task-btn" onclick="doOpenTask()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
-        Draft &amp; Open Task
+      <button id="task-btn" onclick="doOpenTasks()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
+        Draft &amp; Open All Tasks
       </button>
     </div>
 
@@ -282,16 +295,31 @@
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-violet/20 flex items-center justify-center text-violet font-display font-bold shrink-0">5</div>
         <div>
-          <h2 class="font-display text-xl font-semibold mb-1">Claim a Task</h2>
-          <p class="text-muted text-sm">Enter another tester's venture address to see their open tasks. Claim one, do the work, and submit.</p>
+          <h2 class="font-display text-xl font-semibold mb-1">Browse &amp; Claim Tasks</h2>
+          <p class="text-muted text-sm">Discover ventures and open tasks from other testers. Browse all recent activity or search by address.</p>
         </div>
       </div>
       <div class="space-y-4 mb-6">
-        <div>
-          <label class="text-sm text-muted mb-1.5 block">Venture Instance Address</label>
-          <input id="claim-vi-addr" type="text" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono text-sm" placeholder="0x... (paste address shared by another tester)">
+        <!-- Browse all ventures -->
+        <div class="flex gap-2">
+          <button onclick="browseVentures()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex-1">
+            Browse All Ventures
+          </button>
+          <button onclick="document.getElementById('manual-addr').classList.toggle('hidden')" class="btn-secondary px-4 py-2.5 rounded-lg text-sm font-medium">
+            Enter Address
+          </button>
         </div>
-        <button onclick="loadClaimableTasks()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium">Load Open Tasks</button>
+        <div id="manual-addr" class="hidden">
+          <div class="flex gap-2">
+            <input id="claim-vi-addr" type="text" class="input-field flex-1 px-3 py-2 rounded-lg text-pearl font-mono text-sm" placeholder="0x... venture instance address">
+            <button onclick="loadClaimableTasks()" class="btn-secondary px-3 py-2 rounded-lg text-sm font-medium">Load</button>
+          </div>
+        </div>
+        <!-- Search filter -->
+        <div id="search-bar" class="hidden">
+          <input id="venture-search" type="text" oninput="filterVentures()" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body text-sm" placeholder="Filter by venture name, creator address, or task title...">
+        </div>
+        <div id="venture-browser" class="hidden max-h-96 overflow-y-auto space-y-2 pr-1"></div>
         <div id="claimable-tasks"></div>
       </div>
       <div id="claim-status"></div>
@@ -848,41 +876,102 @@ async function doFundBudget() {
   }
 }
 
-// ─── Step 4: Open Task ───────────────────────────────────────────────
-async function doOpenTask() {
+// ─── Step 4: Open Tasks (bulk) ───────────────────────────────────────
+
+let taskEntryCount = 1;
+
+function addTaskEntry() {
+  taskEntryCount++;
+  const list = document.getElementById('task-list');
+  const div = document.createElement('div');
+  div.className = 'task-entry p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3';
+  div.setAttribute('data-idx', taskEntryCount - 1);
+  div.innerHTML = `
+    <div class="flex items-center justify-between">
+      <span class="text-xs text-muted-dim font-mono uppercase tracking-wider">Task ${taskEntryCount}</span>
+      <button onclick="removeTaskEntry(this)" class="text-muted-dim hover:text-red-400 text-xs">Remove</button>
+    </div>
+    <div>
+      <label class="text-xs text-muted mb-1 block">Title</label>
+      <input type="text" class="task-title input-field w-full px-3 py-2 rounded-lg text-pearl font-body text-sm" placeholder="e.g. Write integration tests">
+    </div>
+    <div>
+      <label class="text-xs text-muted mb-1 block">Details</label>
+      <textarea class="task-details input-field w-full px-3 py-2 rounded-lg text-pearl font-body text-sm h-16 resize-none" placeholder="Describe the work, deliverable format, etc."></textarea>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs text-muted mb-1 block">Cash (USDC)</label>
+        <input type="number" class="task-cash input-field w-full px-3 py-2 rounded-lg text-pearl font-mono text-sm" value="2000">
+      </div>
+      <div>
+        <label class="text-xs text-muted mb-1 block">CU Multiplier (%)</label>
+        <input type="number" class="task-cu input-field w-full px-3 py-2 rounded-lg text-pearl font-mono text-sm" value="50" min="0" max="100">
+      </div>
+    </div>`;
+  list.appendChild(div);
+}
+
+function removeTaskEntry(btn) {
+  const entry = btn.closest('.task-entry');
+  if (document.querySelectorAll('.task-entry').length > 1) {
+    entry.remove();
+    // Re-number remaining entries
+    document.querySelectorAll('.task-entry').forEach((el, i) => {
+      el.querySelector('span').textContent = 'Task ' + (i + 1);
+    });
+  }
+}
+
+async function doOpenTasks() {
   const v = state.ventures[state.ventures.length - 1];
   if (!v) { showError('task-status', { message: 'Create a venture first.' }); return; }
 
-  const desc = document.getElementById('task-desc').value || 'Test task';
-  const cashAmount = document.getElementById('task-cash').value || '2000';
-  const cuMult = document.getElementById('task-cu').value || '50';
-
-  const cashWei = ethers.parseUnits(cashAmount, USDC_DECIMALS);
-  const cuBps = parseInt(cuMult) * 100;
-  const metaHash = ethers.keccak256(ethers.toUtf8Bytes(desc));
+  const entries = document.querySelectorAll('.task-entry');
+  const tasks = Array.from(entries).map(el => ({
+    title: el.querySelector('.task-title').value || 'Untitled task',
+    details: el.querySelector('.task-details').value || '',
+    cash: el.querySelector('.task-cash').value || '2000',
+    cu: el.querySelector('.task-cu').value || '50',
+  }));
 
   try {
     const vi = new ethers.Contract(v.vi, ABI.vi, signer);
+    const createdIds = [];
 
-    showLoading('task-status', 'Drafting task (1/2)...');
-    const draftTx = await vi.draftTask(metaHash, 'ipfs://' + desc.replace(/\s+/g, '-').toLowerCase());
-    const draftReceipt = await draftTx.wait();
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      const metaContent = JSON.stringify({ title: t.title, details: t.details });
+      const metaHash = ethers.keccak256(ethers.toUtf8Bytes(metaContent));
+      const metaURI = 'ipfs://' + t.title.replace(/\s+/g, '-').toLowerCase();
+      const cashWei = ethers.parseUnits(t.cash, USDC_DECIMALS);
+      const cuBps = parseInt(t.cu) * 100;
 
-    // Get task count to determine taskId (it's the latest draft)
-    const taskCount = await vi.nextTaskId();
-    const taskId = Number(taskCount) - 1;
+      showLoading('task-status', `Drafting task ${i + 1}/${tasks.length}: "${t.title}"...`);
+      const draftTx = await vi.draftTask(metaHash, metaURI);
+      await draftTx.wait();
 
-    showLoading('task-status', 'Opening task with compensation (2/2)...');
-    const openTx = await vi.openTaskWithComp(
-      taskId, 6000, 5000, false, 0, 0,
-      [{ cashAmount: cashWei, cuMultiplierBps: cuBps }]
-    );
-    const receipt = await openTx.wait();
+      const nextId = await vi.nextTaskId();
+      const taskId = Number(nextId) - 1;
 
-    v.tasks.push({ taskId, state: 'OPEN', cashAmount });
+      showLoading('task-status', `Opening task ${i + 1}/${tasks.length}: "${t.title}"...`);
+      const openTx = await vi.openTaskWithComp(
+        taskId, 6000, 5000, false, 0, 0,
+        [{ cashAmount: cashWei, cuMultiplierBps: cuBps }]
+      );
+      await openTx.wait();
+
+      v.tasks.push({ taskId, state: 'OPEN', title: t.title, details: t.details, cashAmount: t.cash });
+      createdIds.push(taskId);
+
+      // Store task metadata locally for search/display
+      const taskMeta = JSON.parse(localStorage.getItem('adara-task-meta') || '{}');
+      taskMeta[`${v.vi}:${taskId}`] = { title: t.title, details: t.details, cash: t.cash, cu: t.cu, venture: v.vi };
+      localStorage.setItem('adara-task-meta', JSON.stringify(taskMeta));
+    }
+
     saveState();
-
-    showSuccess('task-status', `Task #${taskId} is open!`, receipt.hash);
+    showSuccess('task-status', `${tasks.length} task${tasks.length > 1 ? 's' : ''} opened! (IDs: ${createdIds.join(', ')})`);
     completeStep('openTask');
   } catch (e) {
     if (!document.getElementById('task-status').innerHTML.includes('bg-red')) {
@@ -891,8 +980,132 @@ async function doOpenTask() {
   }
 }
 
-// ─── Step 5: Claim Task ──────────────────────────────────────────────
+// ─── Step 5: Browse & Claim Tasks ────────────────────────────────────
 let claimVI, claimTaskId;
+let allVentures = []; // cached for filtering
+
+async function browseVentures() {
+  showLoading('claim-status', 'Discovering ventures on the network...');
+  document.getElementById('venture-browser').classList.remove('hidden');
+  document.getElementById('search-bar').classList.remove('hidden');
+  document.getElementById('claimable-tasks').innerHTML = '';
+
+  try {
+    const factory = new ethers.Contract(CONTRACTS.VentureFactoryV2, ABI.factory, provider);
+    const head = await provider.getBlockNumber();
+    const fromBlock = Math.max(0, head - 5000); // last ~5000 blocks
+
+    const filter = factory.filters.VentureCreatedV2();
+    const logs = await factory.queryFilter(filter, fromBlock, head);
+    const taskMeta = JSON.parse(localStorage.getItem('adara-task-meta') || '{}');
+
+    allVentures = [];
+    for (const log of logs) {
+      const args = log.args;
+      const viAddr = args.ventureInstance;
+      const creator = args.creator;
+      const ventureId = Number(args.ventureId);
+
+      // Get open tasks
+      const vi = new ethers.Contract(viAddr, ABI.vi, provider);
+      let taskCount = 0;
+      try { taskCount = Number(await vi.nextTaskId()); } catch {}
+
+      const openTasks = [];
+      for (let i = 0; i < taskCount && i < 20; i++) {
+        try {
+          const t = await vi.getTask(i);
+          if (Number(t.state) === 1) { // OPEN
+            const meta = taskMeta[`${viAddr}:${i}`] || {};
+            openTasks.push({
+              id: i,
+              title: meta.title || `Task #${i}`,
+              details: meta.details || '',
+              cash: meta.cash || '?',
+              tsvBps: Number(t.tsvBps),
+              metadataURI: t.deliverableURI || '',
+            });
+          }
+        } catch {}
+      }
+
+      // Look up venture name from any stored state
+      let ventureName = `Venture #${ventureId}`;
+      // Check if this is our own venture
+      const myV = state.ventures?.find(v => v.vi.toLowerCase() === viAddr.toLowerCase());
+      if (myV) ventureName = '(Your venture)';
+
+      allVentures.push({
+        ventureId, viAddr, creator, openTasks, ventureName,
+        isOwn: creator.toLowerCase() === userAddress?.toLowerCase(),
+      });
+    }
+
+    document.getElementById('claim-status').innerHTML = '';
+    renderVentureBrowser(allVentures);
+  } catch (e) {
+    showError('claim-status', e);
+  }
+}
+
+function renderVentureBrowser(ventures) {
+  const container = document.getElementById('venture-browser');
+  if (ventures.length === 0) {
+    container.innerHTML = '<p class="text-muted text-sm py-4">No ventures found in recent blocks. Try entering an address manually.</p>';
+    return;
+  }
+
+  container.innerHTML = ventures.map(v => {
+    const taskList = v.openTasks.length > 0
+      ? v.openTasks.map(t => `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-white/[0.03] mt-1.5">
+            <div class="flex-1 min-w-0 mr-3">
+              <div class="text-sm text-pearl truncate">${t.title}</div>
+              <div class="text-xs text-muted-dim">${t.cash !== '?' ? t.cash + ' USDC' : ''} ${t.details ? '— ' + t.details.slice(0, 60) + (t.details.length > 60 ? '...' : '') : ''}</div>
+            </div>
+            <button onclick="selectVentureAndClaim('${v.viAddr}', ${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium shrink-0">Claim</button>
+          </div>`).join('')
+      : '<p class="text-muted-dim text-xs mt-1">No open tasks</p>';
+
+    const badge = v.isOwn ? '<span class="text-xs bg-violet/20 text-violet px-2 py-0.5 rounded-full ml-2">You</span>' : '';
+    const taskBadge = v.openTasks.length > 0
+      ? `<span class="text-xs bg-mint/20 text-mint px-2 py-0.5 rounded-full ml-1">${v.openTasks.length} open</span>`
+      : '';
+
+    return `
+      <div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] venture-card" data-search="${v.ventureName.toLowerCase()} ${v.creator.toLowerCase()} ${v.openTasks.map(t=>t.title.toLowerCase()).join(' ')}">
+        <div class="flex items-center mb-2">
+          <span class="text-sm font-medium text-pearl">${v.ventureName}</span>${badge}${taskBadge}
+        </div>
+        <div class="text-xs font-mono text-muted-dim mb-2">${v.viAddr.slice(0,10)}...${v.viAddr.slice(-8)} <span class="text-white/10 mx-1">|</span> by ${v.creator.slice(0,8)}...</div>
+        ${taskList}
+      </div>`;
+  }).join('');
+}
+
+function filterVentures() {
+  const query = document.getElementById('venture-search').value.toLowerCase().trim();
+  document.querySelectorAll('.venture-card').forEach(card => {
+    const searchData = card.getAttribute('data-search');
+    card.style.display = !query || searchData.includes(query) ? '' : 'none';
+  });
+}
+
+async function selectVentureAndClaim(viAddr, taskId) {
+  claimVI = new ethers.Contract(viAddr, ABI.vi, signer);
+  claimTaskId = taskId;
+  try {
+    const receipt = await sendTx('claim-status', `Claiming task #${taskId}`,
+      claimVI.claimTaskWithComp(taskId, 0)
+    );
+    showSuccess('claim-status', `Task #${taskId} claimed!`, receipt.hash);
+    state.claimedTasks.push({ ventureAddress: viAddr, taskId, state: 'CLAIMED' });
+    saveState();
+    document.getElementById('claim-actions').classList.remove('hidden');
+  } catch (e) {
+    if (!document.getElementById('claim-status').innerHTML.includes('bg-red')) showError('claim-status', e);
+  }
+}
 
 async function loadClaimableTasks() {
   const addr = document.getElementById('claim-vi-addr').value.trim();
@@ -905,11 +1118,13 @@ async function loadClaimableTasks() {
     claimVI = new ethers.Contract(addr, ABI.vi, signer);
     const count = await claimVI.nextTaskId();
     const tasks = [];
+    const taskMeta = JSON.parse(localStorage.getItem('adara-task-meta') || '{}');
 
     for (let i = 0; i < Number(count) && i < 20; i++) {
       const t = await claimVI.getTask(i);
       if (Number(t.state) === 1) { // OPEN
-        tasks.push({ id: i, tsvBps: Number(t.tsvBps), minQuality: Number(t.minQualityBps) });
+        const meta = taskMeta[`${addr}:${i}`] || {};
+        tasks.push({ id: i, title: meta.title || `Task #${i}`, details: meta.details || '', cash: meta.cash || '?', tsvBps: Number(t.tsvBps), minQuality: Number(t.minQualityBps) });
       }
     }
 
@@ -918,8 +1133,11 @@ async function loadClaimableTasks() {
     } else {
       document.getElementById('claimable-tasks').innerHTML = tasks.map(t => `
         <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] mt-2">
-          <div class="text-sm"><span class="text-muted-dim">Task #${t.id}</span> <span class="text-muted text-xs">TSV: ${t.tsvBps/100}%, Min Quality: ${t.minQuality/100}%</span></div>
-          <button onclick="claimTask(${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium">Claim</button>
+          <div class="flex-1 min-w-0 mr-3">
+            <div class="text-sm text-pearl">${t.title}</div>
+            <div class="text-xs text-muted-dim">${t.cash !== '?' ? t.cash + ' USDC' : 'TSV: ' + t.tsvBps/100 + '%'} ${t.details ? '— ' + t.details.slice(0, 60) : ''}</div>
+          </div>
+          <button onclick="selectVentureAndClaim('${addr}', ${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium shrink-0">Claim</button>
         </div>
       `).join('');
     }
