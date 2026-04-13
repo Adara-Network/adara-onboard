@@ -416,6 +416,7 @@ const CONTRACTS = {
 };
 
 const RPC_URL = 'https://devnet.adara.network';
+const API_URL = 'https://api.adara.network';
 const CHAIN_ID = 1981;
 const CHAIN_ID_HEX = '0x7BD';
 const USDC_DECIMALS = 18;
@@ -964,10 +965,21 @@ async function doOpenTasks() {
       v.tasks.push({ taskId, state: 'OPEN', title: t.title, details: t.details, cashAmount: t.cash });
       createdIds.push(taskId);
 
-      // Store task metadata locally for search/display
-      const taskMeta = JSON.parse(localStorage.getItem('adara-task-meta') || '{}');
-      taskMeta[`${v.vi}:${taskId}`] = { title: t.title, details: t.details, cash: t.cash, cu: t.cu, venture: v.vi };
-      localStorage.setItem('adara-task-meta', JSON.stringify(taskMeta));
+      // POST metadata to the indexer API for cross-tester discovery
+      try {
+        await fetch(`${API_URL}/tasks/metadata`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ventureId: v.ventureId,
+            taskId: taskId,
+            title: t.title,
+            details: t.details,
+            cashAmount: cashWei.toString(),
+            cuMultiplier: cuBps,
+          }),
+        });
+      } catch {} // non-critical — board still works without metadata
     }
 
     saveState();
@@ -980,114 +992,71 @@ async function doOpenTasks() {
   }
 }
 
-// ─── Step 5: Browse & Claim Tasks ────────────────────────────────────
+// ─── Step 5: Task Discovery Board ────────────────────────────────────
 let claimVI, claimTaskId;
-let allVentures = []; // cached for filtering
+let boardTasks = [];
 
 async function browseVentures() {
-  showLoading('claim-status', 'Discovering ventures on the network...');
+  showLoading('claim-status', 'Loading task board...');
   document.getElementById('venture-browser').classList.remove('hidden');
   document.getElementById('search-bar').classList.remove('hidden');
   document.getElementById('claimable-tasks').innerHTML = '';
 
   try {
-    const factory = new ethers.Contract(CONTRACTS.VentureFactoryV2, ABI.factory, provider);
-    const head = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, head - 5000); // last ~5000 blocks
-
-    const filter = factory.filters.VentureCreatedV2();
-    const logs = await factory.queryFilter(filter, fromBlock, head);
-    const taskMeta = JSON.parse(localStorage.getItem('adara-task-meta') || '{}');
-
-    allVentures = [];
-    for (const log of logs) {
-      const args = log.args;
-      const viAddr = args.ventureInstance;
-      const creator = args.creator;
-      const ventureId = Number(args.ventureId);
-
-      // Get open tasks
-      const vi = new ethers.Contract(viAddr, ABI.vi, provider);
-      let taskCount = 0;
-      try { taskCount = Number(await vi.nextTaskId()); } catch {}
-
-      const openTasks = [];
-      for (let i = 0; i < taskCount && i < 20; i++) {
-        try {
-          const t = await vi.getTask(i);
-          if (Number(t.state) === 1) { // OPEN
-            const meta = taskMeta[`${viAddr}:${i}`] || {};
-            openTasks.push({
-              id: i,
-              title: meta.title || `Task #${i}`,
-              details: meta.details || '',
-              cash: meta.cash || '?',
-              tsvBps: Number(t.tsvBps),
-              metadataURI: t.deliverableURI || '',
-            });
-          }
-        } catch {}
-      }
-
-      // Look up venture name from any stored state
-      let ventureName = `Venture #${ventureId}`;
-      // Check if this is our own venture
-      const myV = state.ventures?.find(v => v.vi.toLowerCase() === viAddr.toLowerCase());
-      if (myV) ventureName = '(Your venture)';
-
-      allVentures.push({
-        ventureId, viAddr, creator, openTasks, ventureName,
-        isOwn: creator.toLowerCase() === userAddress?.toLowerCase(),
-      });
-    }
-
+    const resp = await fetch(`${API_URL}/tasks/board?state=OPEN&limit=50`);
+    boardTasks = await resp.json();
     document.getElementById('claim-status').innerHTML = '';
-    renderVentureBrowser(allVentures);
+    renderTaskBoard(boardTasks);
   } catch (e) {
     showError('claim-status', e);
   }
 }
 
-function renderVentureBrowser(ventures) {
+function renderTaskBoard(tasks) {
   const container = document.getElementById('venture-browser');
-  if (ventures.length === 0) {
-    container.innerHTML = '<p class="text-muted text-sm py-4">No ventures found in recent blocks. Try entering an address manually.</p>';
+  if (!tasks || tasks.length === 0) {
+    container.innerHTML = '<p class="text-muted text-sm py-4">No open tasks found. Create some in Step 4, or try entering a venture address manually.</p>';
     return;
   }
 
-  container.innerHTML = ventures.map(v => {
-    const taskList = v.openTasks.length > 0
-      ? v.openTasks.map(t => `
-          <div class="flex items-center justify-between p-2 rounded-lg bg-white/[0.03] mt-1.5">
-            <div class="flex-1 min-w-0 mr-3">
-              <div class="text-sm text-pearl truncate">${t.title}</div>
-              <div class="text-xs text-muted-dim">${t.cash !== '?' ? t.cash + ' USDC' : ''} ${t.details ? '— ' + t.details.slice(0, 60) + (t.details.length > 60 ? '...' : '') : ''}</div>
-            </div>
-            <button onclick="selectVentureAndClaim('${v.viAddr}', ${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium shrink-0">Claim</button>
-          </div>`).join('')
-      : '<p class="text-muted-dim text-xs mt-1">No open tasks</p>';
-
-    const badge = v.isOwn ? '<span class="text-xs bg-violet/20 text-violet px-2 py-0.5 rounded-full ml-2">You</span>' : '';
-    const taskBadge = v.openTasks.length > 0
-      ? `<span class="text-xs bg-mint/20 text-mint px-2 py-0.5 rounded-full ml-1">${v.openTasks.length} open</span>`
-      : '';
+  container.innerHTML = tasks.map(t => {
+    const isOwn = t.creator?.toLowerCase() === userAddress?.toLowerCase();
+    const badge = isOwn ? '<span class="text-xs bg-violet/20 text-violet px-2 py-0.5 rounded-full ml-2">Your venture</span>' : '';
+    const creatorName = t.creatorProfile?.name || (t.creator ? t.creator.slice(0, 8) + '...' : 'Unknown');
+    const cashDisplay = t.cashAmount && t.cashAmount !== '0'
+      ? parseFloat(ethers.formatUnits(t.cashAmount, USDC_DECIMALS)).toLocaleString() + ' USDC'
+      : 'CU only';
+    const cuDisplay = t.cuMultiplier ? (t.cuMultiplier / 100) + '% CU' : '';
+    const details = t.details ? t.details.slice(0, 120) + (t.details.length > 120 ? '...' : '') : '';
 
     return `
-      <div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] venture-card" data-search="${v.ventureName.toLowerCase()} ${v.creator.toLowerCase()} ${v.openTasks.map(t=>t.title.toLowerCase()).join(' ')}">
-        <div class="flex items-center mb-2">
-          <span class="text-sm font-medium text-pearl">${v.ventureName}</span>${badge}${taskBadge}
+      <div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.14] transition-colors task-board-card"
+           data-search="${(t.title || '').toLowerCase()} ${(t.details || '').toLowerCase()} ${(creatorName || '').toLowerCase()} ${t.creator || ''}">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h4 class="text-sm font-medium text-pearl truncate">${t.title}</h4>
+              ${badge}
+            </div>
+            ${details ? `<p class="text-xs text-muted mb-2">${details}</p>` : ''}
+            <div class="flex items-center gap-3 text-xs text-muted-dim">
+              <span class="text-mint font-mono">${cashDisplay}</span>
+              ${cuDisplay ? `<span class="text-cyan font-mono">${cuDisplay}</span>` : ''}
+              <span>by ${creatorName}</span>
+              <span>V#${t.ventureId}</span>
+            </div>
+          </div>
+          ${!isOwn ? `<button onclick="selectVentureAndClaim('${t.ventureInstance}', ${t.taskId})" class="btn-primary px-4 py-2 rounded-lg text-xs font-medium shrink-0">Claim</button>` : ''}
         </div>
-        <div class="text-xs font-mono text-muted-dim mb-2">${v.viAddr.slice(0,10)}...${v.viAddr.slice(-8)} <span class="text-white/10 mx-1">|</span> by ${v.creator.slice(0,8)}...</div>
-        ${taskList}
       </div>`;
   }).join('');
 }
 
 function filterVentures() {
-  const query = document.getElementById('venture-search').value.toLowerCase().trim();
-  document.querySelectorAll('.venture-card').forEach(card => {
-    const searchData = card.getAttribute('data-search');
-    card.style.display = !query || searchData.includes(query) ? '' : 'none';
+  const q = document.getElementById('venture-search').value.toLowerCase().trim();
+  document.querySelectorAll('.task-board-card').forEach(card => {
+    const data = card.getAttribute('data-search');
+    card.style.display = !q || data.includes(q) ? '' : 'none';
   });
 }
 
@@ -1102,6 +1071,8 @@ async function selectVentureAndClaim(viAddr, taskId) {
     state.claimedTasks.push({ ventureAddress: viAddr, taskId, state: 'CLAIMED' });
     saveState();
     document.getElementById('claim-actions').classList.remove('hidden');
+    // Refresh the board — claimed task should disappear
+    setTimeout(() => browseVentures(), 5000);
   } catch (e) {
     if (!document.getElementById('claim-status').innerHTML.includes('bg-red')) showError('claim-status', e);
   }
@@ -1115,31 +1086,31 @@ async function loadClaimableTasks() {
   }
 
   try {
-    claimVI = new ethers.Contract(addr, ABI.vi, signer);
-    const count = await claimVI.nextTaskId();
-    const tasks = [];
-    const taskMeta = JSON.parse(localStorage.getItem('adara-task-meta') || '{}');
-
-    for (let i = 0; i < Number(count) && i < 20; i++) {
-      const t = await claimVI.getTask(i);
-      if (Number(t.state) === 1) { // OPEN
-        const meta = taskMeta[`${addr}:${i}`] || {};
-        tasks.push({ id: i, title: meta.title || `Task #${i}`, details: meta.details || '', cash: meta.cash || '?', tsvBps: Number(t.tsvBps), minQuality: Number(t.minQualityBps) });
-      }
-    }
+    // Use API to get tasks for this venture
+    const resp = await fetch(`${API_URL}/tasks/board?state=OPEN&limit=20`);
+    const all = await resp.json();
+    const tasks = all.filter(t => t.ventureInstance?.toLowerCase() === addr.toLowerCase());
 
     if (tasks.length === 0) {
-      document.getElementById('claimable-tasks').innerHTML = '<p class="text-muted text-sm">No open tasks found on this venture.</p>';
+      // Fallback to on-chain query
+      claimVI = new ethers.Contract(addr, ABI.vi, signer);
+      const count = await claimVI.nextTaskId();
+      const onChainTasks = [];
+      for (let i = 0; i < Number(count) && i < 20; i++) {
+        const t = await claimVI.getTask(i);
+        if (Number(t.state) === 1) onChainTasks.push({ id: i, title: `Task #${i}` });
+      }
+      if (onChainTasks.length === 0) {
+        document.getElementById('claimable-tasks').innerHTML = '<p class="text-muted text-sm">No open tasks found.</p>';
+      } else {
+        document.getElementById('claimable-tasks').innerHTML = onChainTasks.map(t => `
+          <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] mt-2">
+            <span class="text-sm text-pearl">${t.title}</span>
+            <button onclick="selectVentureAndClaim('${addr}', ${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium">Claim</button>
+          </div>`).join('');
+      }
     } else {
-      document.getElementById('claimable-tasks').innerHTML = tasks.map(t => `
-        <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] mt-2">
-          <div class="flex-1 min-w-0 mr-3">
-            <div class="text-sm text-pearl">${t.title}</div>
-            <div class="text-xs text-muted-dim">${t.cash !== '?' ? t.cash + ' USDC' : 'TSV: ' + t.tsvBps/100 + '%'} ${t.details ? '— ' + t.details.slice(0, 60) : ''}</div>
-          </div>
-          <button onclick="selectVentureAndClaim('${addr}', ${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium shrink-0">Claim</button>
-        </div>
-      `).join('');
+      renderTaskBoard(tasks);
     }
   } catch (e) { showError('claim-status', e); }
 }
