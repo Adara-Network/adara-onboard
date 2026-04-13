@@ -1146,18 +1146,17 @@ async function doOpenTasks() {
       v.tasks.push({ taskId, state: 'OPEN', title: t.title, details: t.details, cashAmount: t.cash });
       createdIds.push(taskId);
 
-      // POST metadata to the indexer API for cross-tester discovery
+      // POST metadata with ownership signature
       try {
+        const metaMsg = JSON.stringify({ ventureId: v.ventureId, taskId, title: t.title, details: t.details, timestamp: Date.now() });
+        const metaSig = await signer.signMessage(metaMsg);
         await fetch(`${API_URL}/tasks/metadata`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ventureId: v.ventureId,
-            taskId: taskId,
-            title: t.title,
-            details: t.details,
-            cashAmount: cashWei.toString(),
-            cuMultiplier: cuBps,
+            ventureId: v.ventureId, taskId, title: t.title, details: t.details,
+            cashAmount: cashWei.toString(), cuMultiplier: cuBps,
+            message: metaMsg, signature: metaSig,
           }),
         });
       } catch {} // non-critical — board still works without metadata
@@ -1491,9 +1490,11 @@ function launchConfetti() {
 
 async function postAgentProfile(agentId, name, bio) {
   try {
+    const msg = JSON.stringify({ agentId, name, bio, timestamp: Date.now() });
+    const sig = await signer.signMessage(msg);
     await fetch(`${API_URL}/agents/metadata`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId, name, bio }),
+      body: JSON.stringify({ agentId, name, bio, message: msg, signature: sig }),
     });
   } catch {}
 }
