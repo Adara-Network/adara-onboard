@@ -1146,23 +1146,18 @@ async function doOpenTasks() {
       v.tasks.push({ taskId, state: 'OPEN', title: t.title, details: t.details, cashAmount: t.cash });
       createdIds.push(taskId);
 
-      // POST metadata with content-bound ownership signature
+      // POST metadata — sign the full payload
       try {
         const cleanTitle = t.title.replace(/<[^>]*>/g, '').slice(0, 200).trim();
         const cleanDetails = t.details.replace(/<[^>]*>/g, '').slice(0, 2000).trim();
-        const contentHash = ethers.keccak256(ethers.toUtf8Bytes(cleanTitle + cleanDetails));
-        const metaMsg = JSON.stringify({ action: 'set_task_metadata', ventureId: v.ventureId, taskId, contentHash, cashAmount: cashWei.toString(), cuMultiplier: String(cuBps), timestamp: Date.now() });
+        const metaPayload = { action: 'set_task_metadata', ventureId: v.ventureId, taskId, title: cleanTitle, details: cleanDetails, cashAmount: cashWei.toString(), cuMultiplier: cuBps, timestamp: Date.now() };
+        const metaMsg = JSON.stringify(metaPayload);
         const metaSig = await signer.signMessage(metaMsg);
         await fetch(`${API_URL}/tasks/metadata`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ventureId: v.ventureId, taskId, title: cleanTitle, details: cleanDetails,
-            cashAmount: cashWei.toString(), cuMultiplier: cuBps,
-            message: metaMsg, signature: metaSig,
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...metaPayload, message: metaMsg, signature: metaSig }),
         });
-      } catch {} // non-critical — board still works without metadata
+      } catch {}
     }
 
     saveState();
@@ -1495,12 +1490,12 @@ async function postAgentProfile(agentId, name, bio) {
   try {
     const cleanName = (name || '').replace(/<[^>]*>/g, '').slice(0, 100).trim();
     const cleanBio = (bio || '').replace(/<[^>]*>/g, '').slice(0, 500).trim();
-    const contentHash = ethers.keccak256(ethers.toUtf8Bytes(cleanName + cleanBio));
-    const msg = JSON.stringify({ action: 'set_agent_metadata', agentId, contentHash, timestamp: Date.now() });
+    const payload = { action: 'set_agent_metadata', agentId, name: cleanName, bio: cleanBio, timestamp: Date.now() };
+    const msg = JSON.stringify(payload);
     const sig = await signer.signMessage(msg);
     await fetch(`${API_URL}/agents/metadata`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId, name: cleanName, bio: cleanBio, message: msg, signature: sig }),
+      body: JSON.stringify({ ...payload, message: msg, signature: sig }),
     });
   } catch {}
 }
@@ -1801,12 +1796,12 @@ async function doSubmitProposal() {
     try {
       const cleanTitle = title.replace(/<[^>]*>/g, '').slice(0, 200).trim();
       const cleanDesc = (desc || '').replace(/<[^>]*>/g, '').slice(0, 2000).trim();
-      const propContentHash = ethers.keccak256(ethers.toUtf8Bytes(cleanTitle + cleanDesc));
-      const propMsg = JSON.stringify({ action: 'set_proposal_metadata', proposalId: propId, contentHash: propContentHash, timestamp: Date.now() });
+      const propPayload = { action: 'set_proposal_metadata', proposalId: propId, title: cleanTitle, description: cleanDesc, budgetEstimate: budget, category: 'venture', timestamp: Date.now() };
+      const propMsg = JSON.stringify(propPayload);
       const propSig = await signer.signMessage(propMsg);
       await fetch(`${API_URL}/proposals`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposalId: propId, title: cleanTitle, description: cleanDesc, budgetEstimate: budget, category: 'venture', message: propMsg, signature: propSig }),
+        body: JSON.stringify({ ...propPayload, message: propMsg, signature: propSig }),
       });
     } catch {}
 
