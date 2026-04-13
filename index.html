@@ -1146,15 +1146,18 @@ async function doOpenTasks() {
       v.tasks.push({ taskId, state: 'OPEN', title: t.title, details: t.details, cashAmount: t.cash });
       createdIds.push(taskId);
 
-      // POST metadata with ownership signature
+      // POST metadata with content-bound ownership signature
       try {
-        const metaMsg = JSON.stringify({ ventureId: v.ventureId, taskId, title: t.title, details: t.details, timestamp: Date.now() });
+        const cleanTitle = t.title.replace(/<[^>]*>/g, '').slice(0, 200).trim();
+        const cleanDetails = t.details.replace(/<[^>]*>/g, '').slice(0, 2000).trim();
+        const contentHash = ethers.keccak256(ethers.toUtf8Bytes(cleanTitle + cleanDetails));
+        const metaMsg = JSON.stringify({ action: 'set_task_metadata', ventureId: v.ventureId, taskId, contentHash, timestamp: Date.now() });
         const metaSig = await signer.signMessage(metaMsg);
         await fetch(`${API_URL}/tasks/metadata`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ventureId: v.ventureId, taskId, title: t.title, details: t.details,
+            ventureId: v.ventureId, taskId, title: cleanTitle, details: cleanDetails,
             cashAmount: cashWei.toString(), cuMultiplier: cuBps,
             message: metaMsg, signature: metaSig,
           }),
@@ -1490,11 +1493,14 @@ function launchConfetti() {
 
 async function postAgentProfile(agentId, name, bio) {
   try {
-    const msg = JSON.stringify({ agentId, name, bio, timestamp: Date.now() });
+    const cleanName = (name || '').replace(/<[^>]*>/g, '').slice(0, 100).trim();
+    const cleanBio = (bio || '').replace(/<[^>]*>/g, '').slice(0, 500).trim();
+    const contentHash = ethers.keccak256(ethers.toUtf8Bytes(cleanName + cleanBio));
+    const msg = JSON.stringify({ action: 'set_agent_metadata', agentId, contentHash, timestamp: Date.now() });
     const sig = await signer.signMessage(msg);
     await fetch(`${API_URL}/agents/metadata`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId, name, bio, message: msg, signature: sig }),
+      body: JSON.stringify({ agentId, name: cleanName, bio: cleanBio, message: msg, signature: sig }),
     });
   } catch {}
 }
