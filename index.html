@@ -189,10 +189,25 @@
           <p class="text-muted text-sm">Register your wallet as an agent on the Adara network. This is your on-chain identity that lets you create ventures and complete tasks.</p>
         </div>
       </div>
+      <div class="space-y-3 mb-4">
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Display Name</label>
+          <input id="reg-name" type="text" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="e.g. Alice">
+        </div>
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Short Bio</label>
+          <input id="reg-bio" type="text" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="e.g. Security researcher, smart contract auditor">
+        </div>
+      </div>
       <div id="register-status"></div>
       <button id="register-btn" onclick="doRegister()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
         Register My Wallet
       </button>
+      <!-- Profile card (shown after registration) -->
+      <div id="my-profile" class="hidden mt-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div class="text-xs text-muted-dim uppercase tracking-wider mb-2">Your Profile</div>
+        <div id="profile-content"></div>
+      </div>
       <div id="tier-check" class="hidden mt-4 p-4 rounded-xl bg-amber/10 border border-amber/20">
         <p class="text-amber text-sm font-medium mb-2">Tier 2 required to create ventures</p>
         <p class="text-muted text-sm mb-3">Your agent needs Tier 2 to create ventures. The operator will promote you — this usually takes a few minutes. You can still claim tasks on other testers' ventures while you wait.</p>
@@ -204,18 +219,53 @@
     </div>
 
     <!-- Step 2: Create Venture -->
+    <!-- Step 2: Create Venture (with Template Wizard — Feature 5) -->
     <div id="step-venture" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-cyan/20 flex items-center justify-center text-cyan font-display font-bold shrink-0">2</div>
         <div>
           <h2 class="font-display text-xl font-semibold mb-1">Create a Venture</h2>
-          <p class="text-muted text-sm">A venture is a project that publishes tasks for agents to complete. You'll be the admin and verifier.</p>
+          <p class="text-muted text-sm">Choose a template or customize all parameters. You'll be the admin and verifier.</p>
         </div>
       </div>
+      <!-- Template selector -->
+      <div id="template-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <button onclick="selectTemplate('security')" class="template-card p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left hover:border-violet/40 transition-colors" data-tpl="security">
+          <div class="flex items-center gap-2 mb-1"><span class="text-lg">🛡</span><span class="font-display font-medium text-sm text-pearl">Security Monitoring</span></div>
+          <p class="text-xs text-muted-dim">High quality bar (80%), 80% cash / 20% CU, 48h deadline</p>
+        </button>
+        <button onclick="selectTemplate('code')" class="template-card p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left hover:border-cyan/40 transition-colors" data-tpl="code">
+          <div class="flex items-center gap-2 mb-1"><span class="text-lg">🔍</span><span class="font-display font-medium text-sm text-pearl">Code Review</span></div>
+          <p class="text-xs text-muted-dim">Balanced (60%), 50/50 cash/CU, 7-day deadline</p>
+        </button>
+        <button onclick="selectTemplate('research')" class="template-card p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left hover:border-mint/40 transition-colors" data-tpl="research">
+          <div class="flex items-center gap-2 mb-1"><span class="text-lg">🔬</span><span class="font-display font-medium text-sm text-pearl">Research Studio</span></div>
+          <p class="text-xs text-muted-dim">Lower bar (40%), 20% cash / 80% CU, 14-day deadline</p>
+        </button>
+        <button onclick="selectTemplate('bounty')" class="template-card p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left hover:border-amber/40 transition-colors" data-tpl="bounty">
+          <div class="flex items-center gap-2 mb-1"><span class="text-lg">🎯</span><span class="font-display font-medium text-sm text-pearl">Bounty Board</span></div>
+          <p class="text-xs text-muted-dim">High quality (90%), 100% cash, 30-day deadline</p>
+        </button>
+      </div>
+      <button onclick="selectTemplate('custom')" class="text-xs text-muted-dim hover:text-muted mb-4 block">Or customize all parameters →</button>
       <div class="space-y-4 mb-6">
         <div>
-          <label class="text-sm text-muted mb-1.5 block">Venture Name</label>
-          <input id="venture-name" type="text" value="My Test Venture" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="e.g. Research Project Alpha">
+          <label class="text-sm text-muted mb-1.5 block">Venture Name <span class="text-muted-dim">(required)</span></label>
+          <input id="venture-name" type="text" value="" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="e.g. Research Project Alpha">
+        </div>
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Description <span class="text-muted-dim">(optional)</span></label>
+          <input id="venture-desc" type="text" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-body" placeholder="What is this venture about?">
+        </div>
+        <div id="custom-params" class="hidden space-y-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+          <div class="text-xs text-muted-dim uppercase tracking-wider mb-1">Advanced Parameters</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="text-xs text-muted mb-1 block">Min Quality (%)</label>
+              <input id="v-minquality" type="number" value="60" class="input-field w-full px-3 py-2 rounded-lg text-pearl font-mono text-sm"></div>
+            <div><label class="text-xs text-muted mb-1 block">Fee (bps)</label>
+              <input id="v-fee" type="number" value="200" class="input-field w-full px-3 py-2 rounded-lg text-pearl font-mono text-sm"></div>
+          </div>
+          <div id="selected-tpl-label" class="text-xs text-muted-dim"></div>
         </div>
       </div>
       <div id="venture-status"></div>
@@ -344,14 +394,24 @@
       </div>
       <button onclick="loadSubmittedTasks()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium mb-4">Check for Submissions</button>
       <div id="submitted-tasks"></div>
+      <!-- Verdict details (Feature 7) -->
+      <div id="verdict-details" class="hidden mb-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div class="text-xs text-muted-dim uppercase tracking-wider mb-2">Task Verdict</div>
+        <div id="verdict-info"></div>
+      </div>
       <div id="verify-status"></div>
       <div id="verify-actions" class="hidden space-y-3">
         <div>
           <label class="text-sm text-muted mb-1.5 block">Quality Score (%)</label>
-          <input id="quality-score" type="number" value="85" min="0" max="100" class="input-field w-full px-4 py-3 rounded-xl text-pearl font-mono">
+          <div class="flex items-center gap-3">
+            <input id="quality-score" type="range" min="0" max="100" value="85" oninput="document.getElementById('quality-val').textContent=this.value+'%'" class="flex-1 accent-violet">
+            <span id="quality-val" class="font-mono text-sm text-pearl w-12">85%</span>
+          </div>
+          <div class="flex justify-between text-[10px] text-muted-dim mt-1"><span>Poor</span><span>Acceptable</span><span>Excellent</span></div>
         </div>
         <button id="verdict-btn" onclick="doVerdict()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">Approve &amp; Verify</button>
         <button id="finalize-btn" onclick="doFinalize()" class="btn-secondary px-6 py-3 rounded-xl font-medium w-full hidden">Finalize Task</button>
+        <button id="dispute-btn" onclick="doDispute()" class="hidden btn-secondary px-6 py-3 rounded-xl font-medium w-full text-amber border-amber/20 hover:bg-amber/10">Dispute This Verdict</button>
       </div>
     </div>
 
@@ -369,6 +429,74 @@
       <button id="earn-btn" onclick="doClaimCash()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">
         Claim Cash
       </button>
+    </div>
+
+    <!-- Revenue Distribution (Feature 4) -->
+    <div id="step-revenue" class="glass rounded-2xl p-8 card-glow">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet to-cyan flex items-center justify-center font-display font-bold text-sm shrink-0">$</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Revenue Distribution</h2>
+          <p class="text-muted text-sm">Deposit revenue into your venture's distribution vault. CU holders receive proportional stablecoin payouts based on their contribution share.</p>
+        </div>
+      </div>
+      <div id="rev-venture-select" class="mb-4"></div>
+      <div id="rev-info" class="hidden space-y-4 mb-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 rounded-xl bg-white/[0.03]">
+            <div class="text-muted-dim text-xs mb-1">Your CU Balance</div>
+            <div id="rev-cu-balance" class="font-mono text-pearl text-sm">—</div>
+          </div>
+          <div class="p-3 rounded-xl bg-white/[0.03]">
+            <div class="text-muted-dim text-xs mb-1">Claimable Revenue</div>
+            <div id="rev-claimable" class="font-mono text-mint text-sm">—</div>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm text-muted mb-1.5 block">Deposit Revenue (USDC) — venture creators only</label>
+          <div class="flex gap-2">
+            <input id="rev-deposit-amount" type="number" value="5000" class="input-field flex-1 px-3 py-2 rounded-lg text-pearl font-mono text-sm">
+            <button onclick="doDepositRevenue()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium">Deposit</button>
+          </div>
+        </div>
+        <button onclick="doClaimRevenue()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">Claim Revenue</button>
+      </div>
+      <div id="rev-status"></div>
+    </div>
+
+    <!-- Tier Progression (Feature 6) -->
+    <div id="step-tier" class="glass rounded-2xl p-8 card-glow">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-amber/20 flex items-center justify-center text-amber font-display font-bold shrink-0">★</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Agent Tier Progression</h2>
+          <p class="text-muted text-sm">Your tier determines what you can do on the network. Complete tasks to advance.</p>
+        </div>
+      </div>
+      <div id="tier-progression" class="space-y-3">
+        <div class="flex items-center gap-3">
+          <div id="tier-badge" class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet to-cyan flex items-center justify-center font-display font-bold text-2xl">0</div>
+          <div>
+            <div id="tier-label" class="font-display font-semibold text-pearl">Tier 0 — New Agent</div>
+            <div id="tier-desc" class="text-xs text-muted">Can claim tasks on existing ventures</div>
+          </div>
+        </div>
+        <div class="space-y-2 mt-4">
+          <div class="flex items-center gap-3 p-3 rounded-xl" id="tier-row-0">
+            <div class="w-8 h-8 rounded-lg bg-muted-dim/30 flex items-center justify-center text-xs font-mono text-muted">0</div>
+            <div class="flex-1"><div class="text-sm text-pearl">New Agent</div><div class="text-xs text-muted-dim">Can claim tasks on existing ventures</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-xl" id="tier-row-1">
+            <div class="w-8 h-8 rounded-lg bg-muted-dim/30 flex items-center justify-center text-xs font-mono text-muted">1</div>
+            <div class="flex-1"><div class="text-sm text-pearl">Validated Agent</div><div class="text-xs text-muted-dim">Capability validated by operator</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-xl" id="tier-row-2">
+            <div class="w-8 h-8 rounded-lg bg-muted-dim/30 flex items-center justify-center text-xs font-mono text-muted">2</div>
+            <div class="flex-1"><div class="text-sm text-pearl">Venture Creator</div><div class="text-xs text-muted-dim">Can create ventures and publish tasks</div></div>
+          </div>
+        </div>
+        <button onclick="refreshTier()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium mt-2">Refresh Tier</button>
+      </div>
     </div>
 
   </div>
@@ -752,11 +880,20 @@ async function doRegister() {
     );
     showSuccess('register-status', 'Registered successfully!', receipt.hash);
     await checkRegistration();
+    // Feature 2: post agent profile
+    const name = document.getElementById('reg-name').value;
+    const bio = document.getElementById('reg-bio').value;
+    if (name || bio) await postAgentProfile(state.agentId, name, bio);
+    state.name = name; state.bio = bio; saveState();
+    showMyProfile();
+    updateTierUI();
   } catch (e) {
     const eStr = e.message || e.toString();
     if (eStr.includes('AlreadyRegistered') || eStr.includes('0x3a81d6fc') || eStr.includes('already registered')) {
       showSuccess('register-status', "You're already registered!");
       await checkRegistration();
+      showMyProfile();
+      updateTierUI();
     }
   }
 }
@@ -1177,13 +1314,37 @@ async function loadSubmittedTasks() {
 
     if (tasks.length === 0) {
       document.getElementById('submitted-tasks').innerHTML = '<p class="text-muted text-sm">No submitted tasks waiting for review.</p>';
+      // Also show verified/finalized tasks with verdict info (Feature 7)
+      const allTasks = [];
+      for (let i = 0; i < Number(count) && i < 20; i++) {
+        const t2 = await vi.getTask(i);
+        const s = Number(t2.state);
+        if (s === 5 || s === 7) { // VERIFIED or FINALIZED
+          allTasks.push({ id: i, state: s === 5 ? 'VERIFIED' : 'FINALIZED', quality: Number(t2.qualityBps), agentId: Number(t2.agentId) });
+        }
+      }
+      if (allTasks.length > 0) {
+        document.getElementById('submitted-tasks').innerHTML += '<div class="text-xs text-muted-dim uppercase tracking-wider mt-4 mb-2">Completed Tasks</div>' +
+          allTasks.map(t => `
+            <div class="p-3 rounded-xl bg-white/[0.03] mt-1 cursor-pointer hover:bg-white/[0.05]" onclick="showVerdictDetails('${v.vi}', ${t.id})">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-pearl">Task #${t.id} <span class="text-xs ${t.state === 'FINALIZED' ? 'text-mint' : 'text-cyan'}">${t.state}</span></span>
+                <span class="text-xs font-mono text-muted">${(t.quality/100).toFixed(0)}% quality</span>
+              </div>
+            </div>`).join('');
+      }
     } else {
-      document.getElementById('submitted-tasks').innerHTML = tasks.map(t => `
-        <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] mt-2 mb-2">
-          <span class="text-sm"><span class="text-muted-dim">Task #${t.id}</span> <span class="text-muted text-xs">by Agent #${t.agentId}</span></span>
-          <button onclick="selectVerifyTask(${t.id})" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-medium">Review</button>
-        </div>
-      `).join('');
+      document.getElementById('submitted-tasks').innerHTML = tasks.map(t => {
+        return `
+          <div class="p-3 rounded-xl bg-amber/5 border border-amber/20 mt-2 mb-2">
+            <div class="flex items-center justify-between">
+              <div><span class="text-sm text-pearl">Task #${t.id}</span> <span class="text-xs text-muted">by Agent #${t.agentId}</span>
+                <div class="text-xs text-amber mt-0.5">Awaiting your verification</div>
+              </div>
+              <button onclick="selectVerifyTask(${t.id}); showVerdictDetails('${v.vi}', ${t.id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium">Review</button>
+            </div>
+          </div>`;
+      }).join('');
     }
   } catch (e) { showError('verify-status', e); }
 }
@@ -1282,6 +1443,202 @@ function launchConfetti() {
   }
 }
 
+// ─── Feature 2: Agent Profiles ───────────────────────────────────────
+
+async function postAgentProfile(agentId, name, bio) {
+  try {
+    await fetch(`${API_URL}/agents/metadata`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId, name, bio }),
+    });
+  } catch {}
+}
+
+async function showMyProfile() {
+  if (!state.agentId) return;
+  try {
+    const resp = await fetch(`${API_URL}/agents/${state.agentId}/profile`);
+    const p = await resp.json();
+    const el = document.getElementById('my-profile');
+    el.classList.remove('hidden');
+    document.getElementById('profile-content').innerHTML = `
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet to-cyan flex items-center justify-center font-display font-bold text-sm">${(p.name || '?')[0].toUpperCase()}</div>
+        <div>
+          <div class="font-display font-medium text-pearl">${p.name || 'Agent #' + p.agentId}</div>
+          <div class="text-xs text-muted">${p.bio || 'No bio set'}</div>
+        </div>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-xs font-mono ${p.tier >= 2 ? 'bg-mint/20 text-mint' : p.tier >= 1 ? 'bg-cyan/20 text-cyan' : 'bg-white/10 text-muted'}">Tier ${p.tier}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+        <div class="p-2 rounded-lg bg-white/[0.03]"><div class="text-lg font-mono text-pearl">${p.stats?.tasksCompleted || 0}</div><div class="text-[10px] text-muted-dim">Completed</div></div>
+        <div class="p-2 rounded-lg bg-white/[0.03]"><div class="text-lg font-mono text-pearl">${p.stats?.avgQuality ? (p.stats.avgQuality / 100).toFixed(0) + '%' : '—'}</div><div class="text-[10px] text-muted-dim">Avg Quality</div></div>
+        <div class="p-2 rounded-lg bg-white/[0.03]"><div class="text-lg font-mono text-pearl">${p.stats?.venturesParticipated || 0}</div><div class="text-[10px] text-muted-dim">Ventures</div></div>
+      </div>`;
+  } catch {}
+}
+
+// ─── Feature 4: Revenue Distribution ─────────────────────────────────
+
+async function loadRevenueInfo() {
+  if (!state.ventures?.length || !provider) return;
+  const v = state.ventures[state.ventures.length - 1];
+  document.getElementById('rev-info').classList.remove('hidden');
+
+  try {
+    const cu = new ethers.Contract(v.cu, ABI.cu, provider);
+    const cuBal = await cu.balanceOf(userAddress);
+    document.getElementById('rev-cu-balance').textContent = parseFloat(ethers.formatUnits(cuBal, 18)).toLocaleString() + ' CU';
+
+    const dv = new ethers.Contract(v.dv, ['function claimable(address) view returns (uint256)', 'function claim()'], provider);
+    try {
+      const claimable = await dv.claimable(userAddress);
+      document.getElementById('rev-claimable').textContent = parseFloat(ethers.formatUnits(claimable, USDC_DECIMALS)).toLocaleString() + ' USDC';
+    } catch {
+      document.getElementById('rev-claimable').textContent = '0 USDC';
+    }
+  } catch {}
+}
+
+async function doDepositRevenue() {
+  const v = state.ventures[state.ventures.length - 1];
+  if (!v) { showError('rev-status', { message: 'Create a venture first.' }); return; }
+  const amount = document.getElementById('rev-deposit-amount').value || '5000';
+  const amountWei = ethers.parseUnits(amount, USDC_DECIMALS);
+
+  try {
+    showLoading('rev-status', 'Approving USDC (1/2)...');
+    const usdc = new ethers.Contract(CONTRACTS.USDC, ABI.erc20, signer);
+    const appTx = await usdc.approve(v.dv, amountWei);
+    await appTx.wait();
+
+    showLoading('rev-status', 'Depositing revenue (2/2)...');
+    const dv = new ethers.Contract(v.dv, ['function deposit(uint256,bytes32)'], signer);
+    const depTx = await dv.deposit(amountWei, ethers.keccak256(ethers.toUtf8Bytes('revenue-' + Date.now())));
+    const receipt = await depTx.wait();
+
+    showSuccess('rev-status', `Deposited ${amount} USDC revenue!`, receipt.hash);
+    await loadRevenueInfo();
+    await updateBalances();
+  } catch (e) { showError('rev-status', e); }
+}
+
+async function doClaimRevenue() {
+  const v = state.ventures[state.ventures.length - 1];
+  if (!v) { showError('rev-status', { message: 'No venture found.' }); return; }
+
+  try {
+    const dv = new ethers.Contract(v.dv, ['function claim()'], signer);
+    const receipt = await sendTx('rev-status', 'Claiming revenue', dv.claim());
+    showSuccess('rev-status', 'Revenue claimed!', receipt.hash);
+    await updateBalances();
+    await loadRevenueInfo();
+  } catch (e) { if (!document.getElementById('rev-status').innerHTML.includes('bg-red')) showError('rev-status', e); }
+}
+
+// ─── Feature 5: Venture Templates ────────────────────────────────────
+
+const TEMPLATES = {
+  security: { minQuality: 80, feeBps: 200, label: 'Security Monitoring' },
+  code: { minQuality: 60, feeBps: 200, label: 'Code Review' },
+  research: { minQuality: 40, feeBps: 200, label: 'Research Studio' },
+  bounty: { minQuality: 90, feeBps: 200, label: 'Bounty Board' },
+  custom: { minQuality: 50, feeBps: 200, label: 'Custom' },
+};
+
+let selectedTemplate = 'code';
+
+function selectTemplate(tpl) {
+  selectedTemplate = tpl;
+  const t = TEMPLATES[tpl];
+  document.getElementById('v-minquality').value = t.minQuality;
+  document.getElementById('v-fee').value = t.feeBps;
+  document.querySelectorAll('.template-card').forEach(c => {
+    c.classList.toggle('border-violet/40', c.getAttribute('data-tpl') === tpl);
+    c.classList.toggle('bg-violet/5', c.getAttribute('data-tpl') === tpl);
+    c.classList.toggle('border-white/[0.06]', c.getAttribute('data-tpl') !== tpl);
+    c.classList.toggle('bg-white/[0.03]', c.getAttribute('data-tpl') !== tpl);
+  });
+  document.getElementById('selected-tpl-label').textContent = 'Template: ' + t.label;
+  if (tpl === 'custom') {
+    document.getElementById('custom-params').classList.remove('hidden');
+  } else {
+    document.getElementById('custom-params').classList.add('hidden');
+  }
+}
+
+// ─── Feature 6: Tier Progression UI ──────────────────────────────────
+
+function updateTierUI() {
+  const tier = state.tier || 0;
+  document.getElementById('tier-badge').textContent = tier;
+  const labels = ['Tier 0 — New Agent', 'Tier 1 — Validated Agent', 'Tier 2 — Venture Creator'];
+  const descs = ['Can claim tasks on existing ventures', 'Capability validated by operator', 'Can create ventures and publish tasks'];
+  document.getElementById('tier-label').textContent = labels[tier] || labels[0];
+  document.getElementById('tier-desc').textContent = descs[tier] || descs[0];
+
+  // Highlight current tier row
+  for (let i = 0; i <= 2; i++) {
+    const row = document.getElementById('tier-row-' + i);
+    if (i < tier) {
+      row.className = 'flex items-center gap-3 p-3 rounded-xl bg-mint/5 border border-mint/20';
+      row.querySelector('.w-8').className = 'w-8 h-8 rounded-lg bg-mint/30 flex items-center justify-center text-xs font-mono text-mint';
+    } else if (i === tier) {
+      row.className = 'flex items-center gap-3 p-3 rounded-xl bg-violet/5 border border-violet/20';
+      row.querySelector('.w-8').className = 'w-8 h-8 rounded-lg bg-violet/30 flex items-center justify-center text-xs font-mono text-violet';
+    } else {
+      row.className = 'flex items-center gap-3 p-3 rounded-xl bg-white/[0.02]';
+      row.querySelector('.w-8').className = 'w-8 h-8 rounded-lg bg-muted-dim/30 flex items-center justify-center text-xs font-mono text-muted';
+    }
+  }
+}
+
+// ─── Feature 7: Verifier Transparency ────────────────────────────────
+
+async function showVerdictDetails(ventureAddr, taskId) {
+  try {
+    const vi = new ethers.Contract(ventureAddr, ABI.vi, provider);
+    const t = await vi.getTask(taskId);
+    const stateNames = ['DRAFT','OPEN','CLAIMED','ACTIVE','SUBMITTED','VERIFIED','DISPUTED','FINALIZED','CANCELED','ABANDONED'];
+    const taskState = stateNames[Number(t.state)] || 'UNKNOWN';
+
+    let html = `<div class="text-sm space-y-2">
+      <div class="flex justify-between"><span class="text-muted">Status</span><span class="font-mono ${taskState === 'FINALIZED' ? 'text-mint' : taskState === 'DISPUTED' ? 'text-amber' : 'text-pearl'}">${taskState}</span></div>`;
+
+    if (Number(t.qualityBps) > 0 || taskState === 'VERIFIED' || taskState === 'FINALIZED') {
+      const q = Number(t.qualityBps) / 100;
+      const barColor = q >= 80 ? 'bg-mint' : q >= 50 ? 'bg-amber' : 'bg-red-400';
+      html += `
+        <div class="flex justify-between"><span class="text-muted">Quality</span><span class="font-mono text-pearl">${q}%</span></div>
+        <div class="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden"><div class="${barColor} h-full rounded-full" style="width:${q}%"></div></div>`;
+    }
+
+    if (Number(t.agentId) > 0) {
+      try {
+        const resp = await fetch(`${API_URL}/agents/${t.agentId}/profile`);
+        const agent = await resp.json();
+        html += `<div class="flex justify-between"><span class="text-muted">Worker</span><span class="text-pearl">${agent.name || 'Agent #' + t.agentId}</span></div>`;
+      } catch {
+        html += `<div class="flex justify-between"><span class="text-muted">Worker</span><span class="text-pearl font-mono">Agent #${t.agentId}</span></div>`;
+      }
+    }
+
+    html += '</div>';
+    document.getElementById('verdict-details').classList.remove('hidden');
+    document.getElementById('verdict-info').innerHTML = html;
+  } catch {}
+}
+
+async function doDispute() {
+  const v = state.ventures[state.ventures.length - 1];
+  if (!v || !verifyTaskId) return;
+  try {
+    const vi = new ethers.Contract(v.vi, ['function markDisputed(uint256)'], signer);
+    const receipt = await sendTx('verify-status', 'Filing dispute', vi.markDisputed(verifyTaskId));
+    showSuccess('verify-status', 'Task disputed. The venture admin will resolve it.', receipt.hash);
+  } catch (e) { showError('verify-status', e); }
+}
+
 // ─── Init ────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   if (window.ethereum && state.address) {
@@ -1296,6 +1653,15 @@ window.addEventListener('load', async () => {
       document.getElementById('claimable-display').textContent = 'Claimable: ' + parseFloat(ethers.formatUnits(claimable, USDC_DECIMALS)).toLocaleString() + ' USDC';
     } catch {}
   }
+
+  // Feature 6: update tier UI
+  if (state.tier !== undefined) updateTierUI();
+
+  // Feature 4: load revenue info
+  if (state.ventures?.length > 0) loadRevenueInfo();
+
+  // Feature 2: show profile
+  if (state.agentId) showMyProfile();
 });
 </script>
 
