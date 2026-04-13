@@ -1151,7 +1151,7 @@ async function doOpenTasks() {
         const cleanTitle = t.title.replace(/<[^>]*>/g, '').slice(0, 200).trim();
         const cleanDetails = t.details.replace(/<[^>]*>/g, '').slice(0, 2000).trim();
         const contentHash = ethers.keccak256(ethers.toUtf8Bytes(cleanTitle + cleanDetails));
-        const metaMsg = JSON.stringify({ action: 'set_task_metadata', ventureId: v.ventureId, taskId, contentHash, timestamp: Date.now() });
+        const metaMsg = JSON.stringify({ action: 'set_task_metadata', ventureId: v.ventureId, taskId, contentHash, cashAmount: cashWei.toString(), cuMultiplier: String(cuBps), timestamp: Date.now() });
         const metaSig = await signer.signMessage(metaMsg);
         await fetch(`${API_URL}/tasks/metadata`, {
           method: 'POST',
@@ -1795,13 +1795,18 @@ async function doSubmitProposal() {
     const receipt = await sendTx('prop-status', 'Submitting proposal', vpb.submitProposal(metaHash, budgetWei));
     showSuccess('prop-status', 'Proposal submitted!', receipt.hash);
 
-    // POST off-chain metadata to indexer
+    // POST off-chain metadata with content-bound signature
     const count = await vpb.proposalCount();
     const propId = Number(count) - 1;
     try {
+      const cleanTitle = title.replace(/<[^>]*>/g, '').slice(0, 200).trim();
+      const cleanDesc = (desc || '').replace(/<[^>]*>/g, '').slice(0, 2000).trim();
+      const propContentHash = ethers.keccak256(ethers.toUtf8Bytes(cleanTitle + cleanDesc));
+      const propMsg = JSON.stringify({ action: 'set_proposal_metadata', proposalId: propId, contentHash: propContentHash, timestamp: Date.now() });
+      const propSig = await signer.signMessage(propMsg);
       await fetch(`${API_URL}/proposals`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposalId: propId, proposer: userAddress, title, description: desc, budgetEstimate: budget, category: 'venture' }),
+        body: JSON.stringify({ proposalId: propId, title: cleanTitle, description: cleanDesc, budgetEstimate: budget, category: 'venture', message: propMsg, signature: propSig }),
       });
     } catch {}
 
