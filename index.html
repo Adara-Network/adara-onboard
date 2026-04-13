@@ -101,6 +101,12 @@
       <span class="text-muted-dim text-sm ml-1">Tester Onboard</span>
     </div>
     <div class="flex items-center gap-4">
+      <!-- Feature 8: Notification Bell -->
+      <button id="notif-bell" onclick="toggleNotifications()" class="hidden relative p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition-colors">
+        <svg class="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span id="notif-count" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet text-[10px] font-bold flex items-center justify-center">0</span>
+      </button>
+      <div id="notif-panel" class="hidden absolute top-14 right-4 w-80 max-h-96 overflow-y-auto glass rounded-xl p-3 space-y-2 z-50"></div>
       <div id="network-badge" class="hidden items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08]">
         <span id="network-dot" class="w-2 h-2 rounded-full"></span>
         <span id="network-label"></span>
@@ -462,6 +468,37 @@
         <button onclick="doClaimRevenue()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">Claim Revenue</button>
       </div>
       <div id="rev-status"></div>
+    </div>
+
+    <!-- Proposals (Feature 9) -->
+    <div id="step-proposals" class="glass rounded-2xl p-8 card-glow">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-aurora-blue/20 flex items-center justify-center text-aurora-blue font-display font-bold shrink-0">📋</div>
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1">Proposals</h2>
+          <p class="text-muted text-sm">Submit venture proposals for the community to endorse or oppose. Proposals that reach quorum are approved.</p>
+        </div>
+      </div>
+      <div class="space-y-4 mb-4">
+        <div>
+          <label class="text-xs text-muted mb-1 block">Proposal Title</label>
+          <input id="prop-title" type="text" class="input-field w-full px-3 py-2 rounded-lg text-pearl font-body text-sm" placeholder="e.g. Launch data analytics venture">
+        </div>
+        <div>
+          <label class="text-xs text-muted mb-1 block">Description</label>
+          <textarea id="prop-desc" class="input-field w-full px-3 py-2 rounded-lg text-pearl font-body text-sm h-20 resize-none" placeholder="What the venture would do, why it matters..."></textarea>
+        </div>
+        <div>
+          <label class="text-xs text-muted mb-1 block">Budget Estimate (USDC)</label>
+          <input id="prop-budget" type="number" value="50000" class="input-field w-full px-3 py-2 rounded-lg text-pearl font-mono text-sm">
+        </div>
+        <button onclick="doSubmitProposal()" class="btn-primary px-6 py-3 rounded-xl font-display font-medium w-full">Submit Proposal</button>
+      </div>
+      <div id="prop-status"></div>
+      <div class="mt-4">
+        <button onclick="loadProposals()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium mb-3">View Active Proposals</button>
+        <div id="proposals-list"></div>
+      </div>
     </div>
 
     <!-- Tier Progression (Feature 6) -->
@@ -1639,6 +1676,233 @@ async function doDispute() {
   } catch (e) { showError('verify-status', e); }
 }
 
+// ─── V3.1 Feature 8: In-App Notifications ────────────────────────────
+
+let notifications = JSON.parse(localStorage.getItem('adara-notifs') || '[]');
+let lastNotifBlock = parseInt(localStorage.getItem('adara-notif-block') || '0');
+
+function toggleNotifications() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) {
+    renderNotifications();
+    // Mark all as read
+    notifications.forEach(n => n.read = true);
+    localStorage.setItem('adara-notifs', JSON.stringify(notifications));
+    document.getElementById('notif-count').classList.add('hidden');
+  }
+}
+
+function renderNotifications() {
+  const panel = document.getElementById('notif-panel');
+  if (notifications.length === 0) {
+    panel.innerHTML = '<p class="text-muted text-sm py-4 text-center">No notifications yet</p>';
+    return;
+  }
+  panel.innerHTML = notifications.slice(0, 20).map(n => `
+    <div class="p-2 rounded-lg ${n.read ? 'bg-white/[0.02]' : 'bg-violet/5 border border-violet/10'} text-xs">
+      <div class="text-pearl">${n.message}</div>
+      <div class="text-muted-dim mt-0.5">${n.time || ''}</div>
+    </div>`).join('');
+}
+
+async function pollNotifications() {
+  if (!userAddress || !provider) return;
+  try {
+    const resp = await fetch(`${API_URL}/events?limit=50`);
+    const events = await resp.json();
+    const myAddr = userAddress.toLowerCase();
+    let newCount = 0;
+
+    for (const ev of events) {
+      if (Number(ev.block_number) <= lastNotifBlock) continue;
+      const args = ev.args || {};
+      let msg = '';
+
+      // Notifications relevant to the connected user
+      if (ev.event_name === 'TaskClaimed' && state.ventures?.some(v => v.tasks?.some(t => t.taskId == args.taskId))) {
+        const name = args.agentId ? await agentName(args.agentId) : 'Someone';
+        msg = `✋ ${name} claimed a task in your venture`;
+      } else if (ev.event_name === 'TaskSubmitted' && state.ventures?.length > 0) {
+        msg = `📦 Work submitted on Task #${args.taskId || '?'} — ready for review`;
+      } else if (ev.event_name === 'VerdictSubmitted' && state.claimedTasks?.some(t => t.taskId == args.taskId)) {
+        const quality = args.qualityBps ? `${Number(args.qualityBps)/100}%` : '?';
+        msg = `📋 Your task received a verdict: ${quality} quality`;
+      } else if (ev.event_name === 'CashClaimed' && args.recipient?.toLowerCase() === myAddr) {
+        msg = `💰 Cash claimed successfully`;
+      }
+
+      if (msg) {
+        notifications.unshift({ message: msg, time: new Date().toLocaleTimeString(), read: false, block: Number(ev.block_number) });
+        newCount++;
+      }
+    }
+
+    if (events.length > 0) {
+      lastNotifBlock = Math.max(...events.map(e => Number(e.block_number)));
+      localStorage.setItem('adara-notif-block', String(lastNotifBlock));
+    }
+
+    if (newCount > 0) {
+      localStorage.setItem('adara-notifs', JSON.stringify(notifications.slice(0, 50)));
+      const badge = document.getElementById('notif-count');
+      const unread = notifications.filter(n => !n.read).length;
+      if (unread > 0) {
+        badge.textContent = unread > 9 ? '9+' : String(unread);
+        badge.classList.remove('hidden');
+      }
+    }
+  } catch {}
+}
+
+// ─── V3.1 Feature 9: Proposal UX ────────────────────────────────────
+
+const VPB_ADDR = '0x7D820468785DA0f7024697e537d5ecd562e9f8d9';
+const VPB_ABI = [
+  'function submitProposal(bytes32 metadataHash, uint256 budgetEstimate) returns (uint256)',
+  'function endorse(uint256 proposalId)',
+  'function oppose(uint256 proposalId)',
+  'function proposals(uint256) view returns (address proposer, bytes32 metadataHash, uint256 budgetEstimate, uint64 deadline, uint256 endorseWeight, uint256 opposeWeight, uint8 status, uint256 endorserCount, uint256 opposerCount)',
+  'function proposalCount() view returns (uint256)',
+  'function quorumWeight() view returns (uint256)',
+];
+
+async function doSubmitProposal() {
+  const title = document.getElementById('prop-title').value;
+  const desc = document.getElementById('prop-desc').value;
+  const budget = document.getElementById('prop-budget').value || '50000';
+  if (!title) { showError('prop-status', { message: 'Title is required' }); return; }
+
+  const metaHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({ title, description: desc })));
+  const budgetWei = ethers.parseUnits(budget, USDC_DECIMALS);
+
+  try {
+    const vpb = new ethers.Contract(VPB_ADDR, VPB_ABI, signer);
+    const receipt = await sendTx('prop-status', 'Submitting proposal', vpb.submitProposal(metaHash, budgetWei));
+    showSuccess('prop-status', 'Proposal submitted!', receipt.hash);
+
+    // POST off-chain metadata to indexer
+    const count = await vpb.proposalCount();
+    const propId = Number(count) - 1;
+    try {
+      await fetch(`${API_URL}/proposals`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposalId: propId, proposer: userAddress, title, description: desc, budgetEstimate: budget, category: 'venture' }),
+      });
+    } catch {}
+
+    await loadProposals();
+  } catch (e) { if (!document.getElementById('prop-status').innerHTML.includes('bg-red')) showError('prop-status', e); }
+}
+
+async function loadProposals() {
+  try {
+    const resp = await fetch(`${API_URL}/proposals`);
+    const proposals = await resp.json();
+
+    const vpb = new ethers.Contract(VPB_ADDR, VPB_ABI, provider);
+    let quorum;
+    try { quorum = Number(await vpb.quorumWeight()); } catch { quorum = 500; }
+
+    const container = document.getElementById('proposals-list');
+    if (!proposals || proposals.length === 0) {
+      container.innerHTML = '<p class="text-muted text-sm">No proposals yet. Be the first to submit one.</p>';
+      return;
+    }
+
+    let html = '';
+    for (const p of proposals.slice(0, 10)) {
+      let onChain = { endorseWeight: 0, opposeWeight: 0, status: 0, deadline: 0 };
+      try {
+        const oc = await vpb.proposals(p.proposal_id);
+        onChain = { endorseWeight: Number(oc.endorseWeight), opposeWeight: Number(oc.opposeWeight), status: Number(oc.status), deadline: Number(oc.deadline) };
+      } catch {}
+
+      const statusNames = ['Pending', 'Approved', 'Rejected', 'Executed', 'Canceled'];
+      const statusColors = ['text-amber', 'text-mint', 'text-red-400', 'text-cyan', 'text-muted-dim'];
+      const st = statusNames[onChain.status] || 'Unknown';
+      const stColor = statusColors[onChain.status] || 'text-muted';
+      const progress = quorum > 0 ? Math.min(100, Math.round((onChain.endorseWeight / quorum) * 100)) : 0;
+
+      html += `
+        <div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-2">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <h4 class="text-sm font-medium text-pearl">${p.title || 'Proposal #' + p.proposal_id}</h4>
+              <p class="text-xs text-muted mt-0.5">${(p.description || '').slice(0, 100)}</p>
+            </div>
+            <span class="text-xs font-mono ${stColor}">${st}</span>
+          </div>
+          ${p.budget_estimate ? `<div class="text-xs text-muted-dim mb-2">Budget: ${Number(p.budget_estimate).toLocaleString()} USDC</div>` : ''}
+          <div class="mb-2">
+            <div class="flex justify-between text-[10px] text-muted-dim mb-1"><span>Quorum progress</span><span>${progress}%</span></div>
+            <div class="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden"><div class="bg-violet h-full rounded-full transition-all" style="width:${progress}%"></div></div>
+          </div>
+          <div class="flex gap-2 text-xs">
+            <span class="text-mint">↑ ${onChain.endorseWeight}</span>
+            <span class="text-red-400">↓ ${onChain.opposeWeight}</span>
+          </div>
+          ${onChain.status === 0 ? `
+            <div class="flex gap-2 mt-3">
+              <button onclick="endorseProposal(${p.proposal_id})" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-medium flex-1">Endorse</button>
+              <button onclick="opposeProposal(${p.proposal_id})" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-medium flex-1 border-red-400/20 hover:bg-red-400/10">Oppose</button>
+            </div>` : ''}
+        </div>`;
+    }
+    container.innerHTML = html;
+  } catch (e) { console.error('Load proposals error:', e); }
+}
+
+async function endorseProposal(id) {
+  try {
+    const vpb = new ethers.Contract(VPB_ADDR, VPB_ABI, signer);
+    await sendTx('prop-status', 'Endorsing proposal #' + id, vpb.endorse(id));
+    showSuccess('prop-status', 'Endorsed!');
+    await loadProposals();
+  } catch (e) { showError('prop-status', e); }
+}
+
+async function opposeProposal(id) {
+  try {
+    const vpb = new ethers.Contract(VPB_ADDR, VPB_ABI, signer);
+    await sendTx('prop-status', 'Opposing proposal #' + id, vpb.oppose(id));
+    showSuccess('prop-status', 'Opposed!');
+    await loadProposals();
+  } catch (e) { showError('prop-status', e); }
+}
+
+// ─── V3.1 Feature 10: Reputation Badges ─────────────────────────────
+
+function computeBadges(stats) {
+  const badges = [];
+  if (!stats) return badges;
+  const completed = stats.tasksCompleted || 0;
+  const total = stats.tasksTotal || 0;
+  const avgQ = stats.avgQuality || 0;
+
+  if (total > 0 && completed / total >= 0.9) badges.push({ label: 'Reliable', color: 'bg-mint/20 text-mint', icon: '🎯' });
+  if (avgQ >= 8000) badges.push({ label: 'High Quality', color: 'bg-cyan/20 text-cyan', icon: '⭐' });
+  if (completed >= 20) badges.push({ label: 'Veteran', color: 'bg-violet/20 text-violet', icon: '🏆' });
+  if (completed >= 1) badges.push({ label: 'Active', color: 'bg-amber/20 text-amber', icon: '⚡' });
+
+  return badges;
+}
+
+function renderBadges(badges) {
+  if (!badges || badges.length === 0) return '';
+  return '<div class="flex flex-wrap gap-1.5 mt-2">' +
+    badges.map(b => `<span class="text-[10px] px-2 py-0.5 rounded-full ${b.color}">${b.icon} ${b.label}</span>`).join('') +
+    '</div>';
+}
+
+// ─── V3.1 Feature 11: Task Spam Controls ─────────────────────────────
+// Applied in renderTaskBoard — flag ventures with high open-to-completed ratios
+
+function addSpamWarning(ventureId, openCount) {
+  if (openCount > 20) return `<span class="text-[10px] text-amber bg-amber/10 px-1.5 py-0.5 rounded ml-1">⚠️ ${openCount} open tasks</span>`;
+  return '';
+}
+
 // ─── Init ────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   if (window.ethereum && state.address) {
@@ -1660,8 +1924,27 @@ window.addEventListener('load', async () => {
   // Feature 4: load revenue info
   if (state.ventures?.length > 0) loadRevenueInfo();
 
-  // Feature 2: show profile
-  if (state.agentId) showMyProfile();
+  // Feature 2: show profile + badges
+  if (state.agentId) {
+    showMyProfile();
+    // Fetch and display badges
+    try {
+      const resp = await fetch(`${API_URL}/agents/${state.agentId}/profile`);
+      const p = await resp.json();
+      const badges = computeBadges(p.stats);
+      if (badges.length > 0) {
+        const profileEl = document.getElementById('profile-content');
+        if (profileEl) profileEl.innerHTML += renderBadges(badges);
+      }
+    } catch {}
+  }
+
+  // Feature 8: notifications
+  if (userAddress) {
+    document.getElementById('notif-bell').classList.remove('hidden');
+    pollNotifications();
+    setInterval(pollNotifications, 30000);
+  }
 });
 </script>
 
