@@ -573,6 +573,13 @@
 </footer>
 
 <script>
+// ─── XSS prevention (round 4 audit Fix 7 layer 3) ───────────────────
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
 // ─── Contract Addresses ──────────────────────────────────────────────
 const CONTRACTS = {
   USDC: '0xd757A66793c9559Cf3B1F2C1B1eA5CFC2C7b89A6',
@@ -1209,10 +1216,10 @@ function renderTaskBoard(tasks) {
         <div class="flex items-start justify-between gap-3">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
-              <h4 class="text-sm font-medium text-pearl truncate">${t.title}</h4>
+              <h4 class="text-sm font-medium text-pearl truncate">${esc(t.title)}</h4>
               ${badge}
             </div>
-            ${details ? `<p class="text-xs text-muted mb-2">${details}</p>` : ''}
+            ${details ? `<p class="text-xs text-muted mb-2">${esc(details)}</p>` : ''}
             <div class="flex items-center gap-3 text-xs text-muted-dim">
               <span class="text-mint font-mono">${cashDisplay}</span>
               ${cuDisplay ? `<span class="text-cyan font-mono">${cuDisplay}</span>` : ''}
