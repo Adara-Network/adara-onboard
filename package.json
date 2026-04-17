@@ -1,0 +1,20 @@
+{
+  "name": "adara-onboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Adara Protocol — Tester Onboarding dApp (served at https://onboard.adara.network)",
+  "scripts": {
+    "serve": "npx http-server . -p 4173 -c-1 --silent",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "ethers": "^6.13.4",
+    "http-server": "^14.1.1",
+    "typescript": "^5.7.0"
+  }
+}

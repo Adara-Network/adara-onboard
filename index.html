@@ -580,18 +580,57 @@ function esc(s) {
   return d.innerHTML;
 }
 
-// ─── Contract Addresses ──────────────────────────────────────────────
-const CONTRACTS = {
-  USDC: '0xd757A66793c9559Cf3B1F2C1B1eA5CFC2C7b89A6',
-  AgentRegistry: '0x0c9c3EDe7ed5dd285BD2E38ea3ae43bae3D87260',
-  VentureFactoryV2: '0xD35DAd35AD967061f7AE78414a8c36bBb2B7beE5',
-};
+// ─── Network Configuration ───────────────────────────────────────────
+// Config resolution (first non-null wins):
+//   1. window.__ADARA_CONFIG__        — synchronous override (inline <script>,
+//                                        Cloudflare Pages header injection,
+//                                        or Playwright init-script for E2E)
+//   2. <meta name="adara-config" …>   — inline JSON in the page head
+//   3. Hardcoded defaults below       — current Adara devnet (chainId 1981)
+//
+// To switch to Base Sepolia (or any other chain) after the migration, add
+// ONE <script> tag before this block with the new values, e.g.:
+//   <script>window.__ADARA_CONFIG__ = {
+//     rpcUrl: "https://sepolia.base.org",
+//     chainId: 84532, chainIdHex: "0x14A34",
+//     contracts: { USDC: "0x036C…", AgentRegistry: "0x…", VentureFactoryV2: "0x…" }
+//   };</script>
+function __resolveAdaraConfig() {
+  const defaults = {
+    rpcUrl: 'https://devnet.adara.network',
+    apiUrl: 'https://api.adara.network',
+    chainId: 1981,
+    chainIdHex: '0x7BD',
+    chainName: 'Adara Devnet',
+    usdcDecimals: 18,
+    contracts: {
+      USDC: '0xd757A66793c9559Cf3B1F2C1B1eA5CFC2C7b89A6',
+      AgentRegistry: '0x0c9c3EDe7ed5dd285BD2E38ea3ae43bae3D87260',
+      VentureFactoryV2: '0xD35DAd35AD967061f7AE78414a8c36bBb2B7beE5',
+    },
+  };
+  let override = window.__ADARA_CONFIG__ || {};
+  if (!override || Object.keys(override).length === 0) {
+    const meta = document.querySelector('meta[name="adara-config"]');
+    if (meta && meta.content) {
+      try { override = JSON.parse(meta.content); } catch (_) { override = {}; }
+    }
+  }
+  return {
+    ...defaults,
+    ...override,
+    contracts: { ...defaults.contracts, ...(override.contracts || {}) },
+  };
+}
 
-const RPC_URL = 'https://devnet.adara.network';
-const API_URL = 'https://api.adara.network';
-const CHAIN_ID = 1981;
-const CHAIN_ID_HEX = '0x7BD';
-const USDC_DECIMALS = 18;
+const __CONFIG = __resolveAdaraConfig();
+const CONTRACTS = __CONFIG.contracts;
+const RPC_URL = __CONFIG.rpcUrl;
+const API_URL = __CONFIG.apiUrl;
+const CHAIN_ID = __CONFIG.chainId;
+const CHAIN_ID_HEX = __CONFIG.chainIdHex;
+const USDC_DECIMALS = __CONFIG.usdcDecimals;
+const CHAIN_NAME = __CONFIG.chainName;
 
 // ─── ABI Fragments ───────────────────────────────────────────────────
 const ABI = {
@@ -680,7 +719,7 @@ async function addNetwork() {
   try {
     await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
       chainId: CHAIN_ID_HEX,
-      chainName: 'Adara Devnet',
+      chainName: CHAIN_NAME,
       nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
       rpcUrls: [RPC_URL],
     }]});
@@ -723,7 +762,7 @@ async function checkNetwork() {
 
   if (Number(net.chainId) === CHAIN_ID) {
     dot.className = 'w-2 h-2 rounded-full bg-mint';
-    label.textContent = 'Adara Devnet';
+    label.textContent = CHAIN_NAME;
   } else {
     dot.className = 'w-2 h-2 rounded-full bg-red-500';
     label.innerHTML = 'Wrong Network <button onclick="switchNetwork()" class="text-cyan underline ml-1">Switch</button>';

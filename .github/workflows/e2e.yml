@@ -1,0 +1,90 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke test (fresh wallet via faucet)
+        env:
+          ADARA_RPC_URL: ${{ secrets.ADARA_RPC_URL || 'https://devnet.adara.network' }}
+          ADARA_FAUCET_URL: ${{ secrets.ADARA_FAUCET_URL || 'https://faucet.adara.network' }}
+          ADARA_FAUCET_CODE: ${{ secrets.ADARA_FAUCET_CODE }}
+          ADARA_CHAIN_ID: ${{ secrets.ADARA_CHAIN_ID || '1981' }}
+          ADARA_USDC_ADDRESS: ${{ secrets.ADARA_USDC_ADDRESS }}
+          ADARA_AGENT_REGISTRY: ${{ secrets.ADARA_AGENT_REGISTRY }}
+        run: |
+          if [ -z "$ADARA_FAUCET_CODE" ] && [ -z "$ADARA_E2E_PRIVATE_KEY" ]; then
+            echo "::warning::Neither ADARA_FAUCET_CODE nor ADARA_E2E_PRIVATE_KEY set — skipping smoke"
+            echo "Set one in repo Settings → Secrets → Actions (see test/e2e/README.md)"
+            exit 0
+          fi
+          npm run test:e2e -- --grep "smoke"
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  e2e-full-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Full cycle requires a Tier-2 wallet; opt in via repo secret.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Run full cycle
+        env:
+          ADARA_RPC_URL: ${{ secrets.ADARA_RPC_URL || 'https://devnet.adara.network' }}
+          ADARA_FAUCET_URL: ${{ secrets.ADARA_FAUCET_URL || 'https://faucet.adara.network' }}
+          ADARA_FAUCET_CODE: ${{ secrets.ADARA_FAUCET_CODE }}
+          ADARA_CHAIN_ID: ${{ secrets.ADARA_CHAIN_ID || '1981' }}
+          ADARA_USDC_ADDRESS: ${{ secrets.ADARA_USDC_ADDRESS }}
+          ADARA_AGENT_REGISTRY: ${{ secrets.ADARA_AGENT_REGISTRY }}
+          ADARA_E2E_PRIVATE_KEY: ${{ secrets.ADARA_E2E_PRIVATE_KEY }}
+        run: |
+          if [ -z "$ADARA_E2E_PRIVATE_KEY" ]; then
+            echo "::warning::ADARA_E2E_PRIVATE_KEY not set — skipping full cycle"
+            echo "See test/e2e/README.md §'Unlocking the full cycle'"
+            exit 0
+          fi
+          npm run test:e2e -- --grep "full cycle"
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-full
+          path: playwright-report/
+          retention-days: 14

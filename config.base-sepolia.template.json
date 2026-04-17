@@ -1,0 +1,14 @@
+{
+  "_comment": "Fill in the contract addresses from deployments/base-sepolia.json after running scripts/deploy-l2.ts --network baseSepolia. Then inject this JSON via <meta name='adara-config' content='...'> or <script>window.__ADARA_CONFIG__ = ...</script> above the main <script> block in index.html.",
+  "rpcUrl": "https://sepolia.base.org",
+  "apiUrl": "https://api.adara.network",
+  "chainId": 84532,
+  "chainIdHex": "0x14A34",
+  "chainName": "Base Sepolia",
+  "usdcDecimals": 6,
+  "contracts": {
+    "USDC": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "AgentRegistry": "0xFILL_IN_AFTER_DEPLOY",
+    "VentureFactoryV2": "0xFILL_IN_AFTER_DEPLOY"
+  }
+}
