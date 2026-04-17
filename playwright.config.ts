@@ -25,7 +25,17 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        // The devnet RPC sends duplicate Access-Control-Allow-Origin headers
+        // (Besu echoes Origin + nginx adds '*'); real users are unaffected
+        // because MetaMask bypasses browser CORS, but our stub fetches directly.
+        // The nginx fix is committed to Adara Protocol repo; until that's
+        // deployed, bypass browser CORS in the test harness.
+        launchOptions: {
+          args: ["--disable-web-security", "--disable-features=IsolateOrigins,site-per-process"],
+        },
+      },
     },
   ],
   ...(USE_LOCAL_SERVER

@@ -589,12 +589,14 @@ function esc(s) {
 //   3. Hardcoded defaults below       — current Adara devnet (chainId 1981)
 //
 // To switch to Base Sepolia (or any other chain) after the migration, add
-// ONE <script> tag before this block with the new values, e.g.:
-//   <script>window.__ADARA_CONFIG__ = {
+// ONE inline script tag before this block with the new values:
+//   window.__ADARA_CONFIG__ = {
 //     rpcUrl: "https://sepolia.base.org",
 //     chainId: 84532, chainIdHex: "0x14A34",
-//     contracts: { USDC: "0x036C…", AgentRegistry: "0x…", VentureFactoryV2: "0x…" }
-//   };</script>
+//     contracts: { USDC: "0x036C...", AgentRegistry: "0x...", VentureFactoryV2: "0x..." }
+//   };
+// (the literal closing-script-tag sequence is intentionally avoided in this
+//  comment so the HTML parser does not end the script block prematurely)
 function __resolveAdaraConfig() {
   const defaults = {
     rpcUrl: 'https://devnet.adara.network',

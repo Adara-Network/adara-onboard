@@ -71,17 +71,42 @@ test.describe("onboard dApp — smoke", () => {
   });
 
   test("connect → register → see registered profile", async ({ page }) => {
+    page.on("console", (msg) => console.log(`[page:${msg.type()}]`, msg.text()));
+    page.on("pageerror", (err) => console.log("[page:error]", err.message));
+
     await injectStub(page, wallet);
     await page.goto("/");
 
     // Landing
     await expect(page).toHaveTitle(/Tester Onboarding/i);
+
+    // Make sure ethers UMD loaded + the stub finished installing.
+    await page.waitForFunction(() => (window as any).ethers && (window as any).ethereum?.isAdaraE2E, null, {
+      timeout: 15_000,
+    });
+    const diag = await page.evaluate(() => ({
+      hasEthers: typeof (window as any).ethers !== "undefined",
+      hasEthereum: typeof (window as any).ethereum !== "undefined",
+      isAdaraE2E: (window as any).ethereum?.isAdaraE2E,
+      hasRequest: typeof (window as any).ethereum?.request === "function",
+    }));
+    console.log("[e2e:diag]", diag);
     const connectBtn = page.locator("#connect-btn");
     await expect(connectBtn).toBeVisible();
 
     // Connect
     await connectBtn.click();
-    await expect(connectBtn).toContainText(wallet.address.slice(0, 6), { timeout: 20_000 });
+    // Give the async connectWallet() flow a moment to progress before asserting
+    await page.waitForTimeout(3000);
+    const logsMid = await page.evaluate(() => (window as any).__E2E_LOG__ || []);
+    console.log("[e2e:stub-log-mid]", logsMid);
+    try {
+      await expect(connectBtn).toContainText(wallet.address.slice(0, 6), { timeout: 20_000 });
+    } catch (err) {
+      const logs = await page.evaluate(() => (window as any).__E2E_LOG__ || []);
+      console.log("[e2e:stub-log-on-fail]", logs);
+      throw err;
+    }
 
     // Network badge should show "Adara Devnet" (mint dot)
     const netLabel = page.locator("#network-label");

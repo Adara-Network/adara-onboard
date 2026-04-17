@@ -32,15 +32,15 @@ export interface InjectConfig {
  */
 export const ETHEREUM_STUB_SOURCE = /* js */ `
 (function () {
-  // Wait for the ethers UMD to be available (the dApp loads it via <script>).
-  // This stub runs in an init script, which fires before page scripts. If
-  // ethers isn't loaded yet, we install a waiter that swaps in the stub
-  // implementation once ethers resolves.
+  window.__E2E_LOG__ = window.__E2E_LOG__ || [];
+  var log = function (msg) { try { window.__E2E_LOG__.push("[" + Date.now() + "] " + msg); } catch (_) {} };
+
   var cfg = window.__ADARA_E2E_CONFIG__;
   if (!cfg) {
-    console.warn("[e2e-stub] no __ADARA_E2E_CONFIG__; stub disabled");
+    log("no __ADARA_E2E_CONFIG__; stub disabled");
     return;
   }
+  log("stub init (rpc=" + cfg.rpcUrl + ", chainId=" + cfg.chainId + ")");
 
   var listeners = {};
   var pending = [];
@@ -55,19 +55,25 @@ export const ETHEREUM_STUB_SOURCE = /* js */ `
       setTimeout(install, 25);
       return;
     }
-    var provider = new window.ethers.JsonRpcProvider(cfg.rpcUrl);
-    var wallet = new window.ethers.Wallet(cfg.privateKey, provider);
-    real = { provider: provider, wallet: wallet };
+    try {
+      var provider = new window.ethers.JsonRpcProvider(cfg.rpcUrl);
+      var wallet = new window.ethers.Wallet(cfg.privateKey, provider);
+      real = { provider: provider, wallet: wallet };
+      log("install ok (address=" + wallet.address + ", pending=" + pending.length + ")");
 
-    // Flush queued requests
-    var queued = pending; pending = [];
-    queued.forEach(function (q) {
-      dispatch(q.method, q.params).then(q.resolve, q.reject);
-    });
+      // Flush queued requests
+      var queued = pending; pending = [];
+      queued.forEach(function (q) {
+        dispatch(q.method, q.params).then(q.resolve, q.reject);
+      });
+    } catch (e) {
+      log("install FAILED: " + (e && e.message ? e.message : String(e)));
+    }
   }
   install();
 
   function dispatch(method, params) {
+    log("dispatch " + method + (real ? " (live)" : " (queued — install not ready)"));
     if (!real) {
       return new Promise(function (resolve, reject) {
         pending.push({ method: method, params: params, resolve: resolve, reject: reject });
@@ -129,6 +135,13 @@ export const ETHEREUM_STUB_SOURCE = /* js */ `
     enable: function () { return dispatch("eth_requestAccounts", []); },
   };
 
-  Object.defineProperty(window, "ethereum", { value: ethStub, writable: false, configurable: false });
+  try {
+    Object.defineProperty(window, "ethereum", { value: ethStub, writable: true, configurable: true });
+    log("window.ethereum defined via Object.defineProperty");
+  } catch (e) {
+    log("defineProperty failed: " + String(e));
+    window.ethereum = ethStub;
+    log("fell back to direct assignment");
+  }
 })();
 `;
