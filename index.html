@@ -129,15 +129,15 @@
   <!-- Hero / Pre-connect -->
   <div id="hero" class="text-center py-16">
     <div class="gradient-mesh rounded-3xl p-12 mb-8">
-      <h1 class="font-display text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-violet via-cyan to-mint bg-clip-text text-transparent">
-        Welcome to Adara Devnet
+      <h1 id="hero-title" class="font-display text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-violet via-cyan to-mint bg-clip-text text-transparent">
+        Welcome to Adara
       </h1>
       <p class="text-muted text-lg max-w-xl mx-auto mb-8">
         This guided flow walks you through the full Adara Protocol tester experience.
         No terminal needed — just MetaMask and button clicks.
       </p>
-      <button onclick="addNetwork()" class="btn-secondary px-6 py-3 rounded-xl font-display font-medium mb-4 block mx-auto">
-        Add Adara Devnet to MetaMask
+      <button id="add-network-btn" onclick="addNetwork()" class="btn-secondary px-6 py-3 rounded-xl font-display font-medium mb-4 block mx-auto">
+        Add network to MetaMask
       </button>
       <p class="text-muted-dim text-sm">Then connect your wallet to begin</p>
     </div>
@@ -655,6 +655,18 @@ const CHAIN_ID = __CONFIG.chainId;
 const CHAIN_ID_HEX = __CONFIG.chainIdHex;
 const USDC_DECIMALS = __CONFIG.usdcDecimals;
 const CHAIN_NAME = __CONFIG.chainName;
+
+// Surface the active chain name in the pre-connect hero copy. The static
+// HTML above ships neutral ("Welcome to Adara" / "Add network to MetaMask")
+// so the page is honest while JS is still loading; this fills in the
+// specific chain once config resolves. Keeps the same HTML working across
+// devnet / Base Sepolia / any future chain without re-publishing the file.
+document.addEventListener('DOMContentLoaded', function () {
+  var t = document.getElementById('hero-title');
+  if (t) t.textContent = 'Welcome to Adara on ' + CHAIN_NAME;
+  var b = document.getElementById('add-network-btn');
+  if (b) b.textContent = 'Add ' + CHAIN_NAME + ' to MetaMask';
+});
 
 // ─── ABI Fragments ───────────────────────────────────────────────────
 const ABI = {
