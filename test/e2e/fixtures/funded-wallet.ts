@@ -20,6 +20,10 @@ export interface FundOptions {
   faucetCode: string;
   usdcAddress: string;
   labelPrefix?: string;
+  // Cohort the minted wallet is assigned to. Defaults to a non-human bucket
+  // so CI / dev-loop runs don't pollute the 'invitee' funnel that drives the
+  // stall-alert cron. Faucet allowlists this against COHORT_ALLOWLIST.
+  cohort?: string;
 }
 
 const ERC20_BAL = ["function balanceOf(address) view returns (uint256)"];
@@ -57,7 +61,12 @@ export async function getOrFundWallet(opts: FundOptions): Promise<FundedWallet> 
   const resp = await fetch(`${opts.faucetUrl.replace(/\/$/, "")}/faucet`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ address: wallet.address, label, code: opts.faucetCode }),
+    body: JSON.stringify({
+      address: wallet.address,
+      label,
+      code: opts.faucetCode,
+      cohort: opts.cohort ?? "internal-dry-run-testers",
+    }),
   });
   if (!resp.ok) {
     throw new Error(`Faucet returned ${resp.status}: ${await resp.text()}`);
