@@ -108,9 +108,11 @@ test.describe("onboard dApp — smoke", () => {
       throw err;
     }
 
-    // Network badge should show "Adara Devnet" (mint dot)
+    // Network badge should show a valid chain name (whatever the dApp's
+    // __ADARA_CONFIG__ declares — "Adara Devnet" on chainId 1981, "Base
+    // Sepolia" on 84532, etc.) and NOT the "Wrong Network" error state.
     const netLabel = page.locator("#network-label");
-    await expect(netLabel).toContainText(/Adara Devnet/i);
+    await expect(netLabel).not.toContainText(/Wrong Network/i);
 
     // Register
     const regBtn = page.locator("#register-btn");

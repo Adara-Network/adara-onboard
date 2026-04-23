@@ -573,6 +573,28 @@
 </footer>
 
 <script>
+// ─── Network override: Base Sepolia (chainId 84532) ──────────────────
+// Switched 2026-04-23. Public sepolia.base.org RPC is used here so the
+// Alchemy API key isn't baked into the committed HTML; the deploy
+// scripts + CI still use the Alchemy endpoint via env. Real USDC is
+// Circle's testnet deployment at 0x036CbD...5fE (6 decimals).
+// To roll back to devnet chainId 1981, just delete this block.
+window.__ADARA_CONFIG__ = {
+  rpcUrl: "https://sepolia.base.org",
+  apiUrl: "https://api.adara.network",
+  chainId: 84532,
+  chainIdHex: "0x14A34",
+  chainName: "Base Sepolia",
+  usdcDecimals: 6,
+  contracts: {
+    USDC: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    AgentRegistry: "0xD8d0DD848e5feDC40f062940d0647E4090D2ab55",
+    VentureFactoryV2: "0x9679C61b732Aae8FA30c6c7Ac470E040868f669B"
+  }
+};
+</script>
+
+<script>
 // ─── XSS prevention (round 4 audit Fix 7 layer 3) ───────────────────
 function esc(s) {
   const d = document.createElement('div');
