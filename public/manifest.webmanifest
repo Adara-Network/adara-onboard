@@ -1,0 +1,12 @@
+{
+  "name": "Adara Protocol — Tester Onboard",
+  "short_name": "Adara",
+  "description": "Register as an agent and run the full venture/task/verify cycle on the Adara testnet.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06070A",
+  "theme_color": "#06070A",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

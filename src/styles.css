@@ -1,0 +1,238 @@
+/* 2026-05-05 polish pass: Tailwind v4 entry. Replaces the
+ * cdn.tailwindcss.com runtime which Tailwind itself flags as
+ * "not for production". The @theme block ports the inline
+ * tailwind.config.theme.extend from the pre-bundle index.html
+ * verbatim so the visual layer stays identical pre/post bundle.
+ *
+ * Designer note: this file is the colour + font source of truth.
+ * If you swap the visual layer wholesale (e.g. introduce a design
+ * system), replace the @theme block; the rest of the dApp will
+ * pick up the new tokens via Tailwind utility classes.
+ */
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian: #06070a;
+  --color-graphite: #0e1117;
+  --color-pearl: #f5f7fb;
+  --color-muted: #a9b2c3;
+  --color-muted-dim: #6b7280;
+  --color-cyan: #36e3ff;
+  --color-violet: #8b5cf6;
+  --color-aurora-blue: #4f7cff;
+  --color-mint: #3ee8b5;
+  --color-amber: #ffb84d;
+
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* ──────────────────── App-level styles ──────────────────── */
+
+body {
+  background: #06070a;
+  color: #f5f7fb;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: #f5f7fb;
+}
+
+.glass {
+  background: rgba(14, 17, 23, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.glass:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.gradient-mesh {
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 40%, rgba(139, 92, 246, 0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 30%, rgba(54, 227, 255, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 40% at 50% 80%, rgba(79, 124, 255, 0.1) 0%, transparent 60%);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #8b5cf6, #36e3ff);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.3);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.2s ease;
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.input-field {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  color: #f5f7fb;
+}
+.input-field:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.card-glow {
+  position: relative;
+}
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(54, 227, 255, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.card-glow:hover::before {
+  opacity: 1;
+}
+
+.step-dot.completed {
+  background: linear-gradient(135deg, #8b5cf6, #36e3ff);
+  color: #06070a;
+}
+.step-dot.active {
+  background: rgba(139, 92, 246, 0.2);
+  border: 2px solid #8b5cf6;
+  color: #8b5cf6;
+}
+.step-line.completed {
+  background: linear-gradient(90deg, #8b5cf6, #36e3ff);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Tx status feed-in */
+.tx-status {
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Step-complete confetti (legacy) */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-100vh) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(100vh)  rotate(720deg); opacity: 0; }
+}
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  z-index: 10000;
+  pointer-events: none;
+  animation: confetti-fall 3s ease-in forwards;
+}
+
+/* Card glow hover (subtler than before) */
+.card-glow {
+  transition: box-shadow 0.3s ease;
+}
+.card-glow:hover {
+  box-shadow: 0 0 40px rgba(139, 92, 246, 0.08);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #06070a;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+/* 2026-05-05 polish pass: toast component (replaces alert()) */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+  pointer-events: none;
+}
+.toast {
+  background: rgba(14, 17, 23, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1.125rem;
+  color: #f5f7fb;
+  font-size: 0.875rem;
+  min-width: 18rem;
+  max-width: 22rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  animation: toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.toast.toast-success { border-left: 3px solid #3ee8b5; }
+.toast.toast-error   { border-left: 3px solid #ef4444; }
+.toast.toast-warn    { border-left: 3px solid #ffb84d; }
+.toast.toast-info    { border-left: 3px solid #36e3ff; }
+.toast.toast-leaving { animation: toast-out 180ms ease-in forwards; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}

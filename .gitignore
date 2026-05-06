@@ -7,3 +7,7 @@ test-results/
 .env
 .env.*
 !.env.example
+
+# 2026-05-05 polish pass: vite build output. Cloudflare Pages builds
+# from source via `npm run build`; dist/ doesn't need to ship in git.
+dist/

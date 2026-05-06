@@ -4,91 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Adara Protocol — Tester Onboarding</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+
+  <!-- 2026-05-05 polish pass: meta + social -->
+  <meta name="description" content="Adara Protocol tester onboarding — register as an agent, create a venture, and run the full task lifecycle on testnet." />
+  <meta name="theme-color" content="#06070A" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Adara Protocol — Tester Onboard" />
+  <meta property="og:description" content="Register as an agent and run the full venture/task/verify cycle on the Adara testnet." />
+  <meta property="og:image" content="/og-image.png" />
+  <meta property="og:url" content="https://onboard.adara.network" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Adara Protocol — Tester Onboard" />
+  <meta name="twitter:description" content="Register as an agent and run the full venture/task/verify cycle on the Adara testnet." />
+  <meta name="twitter:image" content="/og-image.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            obsidian: '#06070A',
-            graphite: '#0E1117',
-            pearl: '#F5F7FB',
-            muted: '#A9B2C3',
-            'muted-dim': '#6B7280',
-            cyan: '#36E3FF',
-            violet: '#8B5CF6',
-            'aurora-blue': '#4F7CFF',
-            mint: '#3EE8B5',
-            amber: '#FFB84D',
-          },
-          fontFamily: {
-            display: ['Space Grotesk', 'system-ui', 'sans-serif'],
-            body: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    body { background: #06070A; color: #F5F7FB; font-family: 'Inter', system-ui, sans-serif; }
-    body::before {
-      content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.03;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-      background-repeat: repeat; background-size: 256px 256px;
-    }
-    ::selection { background: rgba(139, 92, 246, 0.3); color: #F5F7FB; }
-    .glass { background: rgba(14, 17, 23, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .glass:hover { border-color: rgba(255, 255, 255, 0.14); }
-    .gradient-mesh {
-      background:
-        radial-gradient(ellipse 60% 50% at 20% 40%, rgba(139, 92, 246, 0.2) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 60% at 80% 30%, rgba(54, 227, 255, 0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 70% 40% at 50% 80%, rgba(79, 124, 255, 0.1) 0%, transparent 60%);
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #8B5CF6, #36E3FF);
-      transition: all 0.3s ease; position: relative; overflow: hidden;
-    }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(139, 92, 246, 0.3); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
-      transition: all 0.3s ease;
-    }
-    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
-    .input-field {
-      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: border-color 0.3s ease;
-    }
-    .input-field:focus { border-color: #8B5CF6; outline: none; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
-    .step-dot { transition: all 0.4s ease; }
-    .step-dot.active { background: linear-gradient(135deg, #8B5CF6, #36E3FF); box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
-    .step-dot.completed { background: #3EE8B5; }
-    .step-line { transition: background 0.6s ease; }
-    .step-line.completed { background: #3EE8B5; }
-    .tx-status { animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { animation: spin 1s linear infinite; }
-    @keyframes confetti-fall {
-      0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-    }
-    .confetti-piece {
-      position: fixed; top: 0; z-index: 10000; pointer-events: none;
-      animation: confetti-fall 3s ease-in forwards;
-    }
-    .card-glow { transition: box-shadow 0.3s ease; }
-    .card-glow:hover { box-shadow: 0 0 40px rgba(139, 92, 246, 0.08); }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #06070A; }
-    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
-  </style>
+
+  <!-- 2026-05-05 polish pass: bundled entry. Replaces cdn.tailwindcss.com
+       (explicitly "not for production") + cdnjs ethers (single-vendor
+       fragility). Vite emits a hashed bundle in dist/ that Cloudflare
+       Pages serves directly. The module sets window.ethers + window.adara
+       so the legacy inline scripts below keep working until the
+       designer rebuilds the view layer. -->
+  <script type="module" src="/src/main.ts"></script>
 </head>
 <body class="min-h-screen">
 
@@ -107,16 +51,20 @@
         <span id="notif-count" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet text-[10px] font-bold flex items-center justify-center">0</span>
       </button>
       <div id="notif-panel" class="hidden absolute top-14 right-4 w-80 max-h-96 overflow-y-auto glass rounded-xl p-3 space-y-2 z-50"></div>
-      <div id="network-badge" class="hidden items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08]">
+      <!-- 2026-05-05 polish pass: hide secondary header pills on small
+           screens so the connect button doesn't get pushed off-screen.
+           Network + balances appear on sm+ (≥640px). The same data is
+           visible inside the status panel on every viewport. -->
+      <div id="network-badge" class="hidden sm:flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08]">
         <span id="network-dot" class="w-2 h-2 rounded-full"></span>
         <span id="network-label"></span>
       </div>
-      <div id="balances" class="hidden items-center gap-3 text-xs font-mono text-muted">
+      <div id="balances" class="hidden sm:flex items-center gap-3 text-xs font-mono text-muted">
         <span id="eth-bal"></span>
         <span class="text-white/10">|</span>
         <span id="usdc-bal"></span>
       </div>
-      <button id="connect-btn" onclick="connectWallet()" class="btn-primary px-4 py-2 rounded-lg font-display font-medium text-sm">
+      <button id="connect-btn" onclick="adara.connect()" class="btn-primary px-4 py-2 rounded-lg font-display font-medium text-sm">
         Connect Wallet
       </button>
     </div>
@@ -136,7 +84,7 @@
         This guided flow walks you through the full Adara Protocol tester experience.
         No terminal needed — just MetaMask and button clicks.
       </p>
-      <button id="add-network-btn" onclick="addNetwork()" class="btn-secondary px-6 py-3 rounded-xl font-display font-medium mb-4 block mx-auto">
+      <button id="btn-add-network" onclick="adara.addNetwork()" class="btn-secondary px-6 py-3 rounded-xl font-display font-medium mb-4 block mx-auto">
         Add network to MetaMask
       </button>
       <p class="text-muted-dim text-sm">Then connect your wallet to begin</p>
@@ -187,7 +135,7 @@
   <div id="steps-container" class="hidden space-y-6">
 
     <!-- Step 1: Register -->
-    <div id="step-register" class="glass rounded-2xl p-8 card-glow">
+    <div id="step-register" class="glass rounded-2xl p-5 sm:p-8 card-glow">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-violet/20 flex items-center justify-center text-violet font-display font-bold shrink-0">1</div>
         <div>
@@ -226,7 +174,7 @@
 
     <!-- Step 2: Create Venture -->
     <!-- Step 2: Create Venture (with Template Wizard — Feature 5) -->
-    <div id="step-venture" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+    <div id="step-venture" class="glass rounded-2xl p-5 sm:p-8 card-glow opacity-40 pointer-events-none">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-cyan/20 flex items-center justify-center text-cyan font-display font-bold shrink-0">2</div>
         <div>
@@ -282,7 +230,7 @@
     </div>
 
     <!-- Step 3: Fund Budget -->
-    <div id="step-fund" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+    <div id="step-fund" class="glass rounded-2xl p-5 sm:p-8 card-glow opacity-40 pointer-events-none">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-mint/20 flex items-center justify-center text-mint font-display font-bold shrink-0">3</div>
         <div>
@@ -303,7 +251,7 @@
     </div>
 
     <!-- Step 4: Open Task -->
-    <div id="step-task" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+    <div id="step-task" class="glass rounded-2xl p-5 sm:p-8 card-glow opacity-40 pointer-events-none">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-aurora-blue/20 flex items-center justify-center text-aurora-blue font-display font-bold shrink-0">4</div>
         <div>
@@ -347,7 +295,7 @@
     </div>
 
     <!-- Step 5: Browse & Claim -->
-    <div id="step-claim" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+    <div id="step-claim" class="glass rounded-2xl p-5 sm:p-8 card-glow opacity-40 pointer-events-none">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-violet/20 flex items-center justify-center text-violet font-display font-bold shrink-0">5</div>
         <div>
@@ -390,7 +338,7 @@
     </div>
 
     <!-- Step 6: Verify -->
-    <div id="step-verify" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+    <div id="step-verify" class="glass rounded-2xl p-5 sm:p-8 card-glow opacity-40 pointer-events-none">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-cyan/20 flex items-center justify-center text-cyan font-display font-bold shrink-0">6</div>
         <div>
@@ -422,7 +370,7 @@
     </div>
 
     <!-- Step 7: Claim Cash -->
-    <div id="step-earn" class="glass rounded-2xl p-8 card-glow opacity-40 pointer-events-none">
+    <div id="step-earn" class="glass rounded-2xl p-5 sm:p-8 card-glow opacity-40 pointer-events-none">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-mint/20 flex items-center justify-center text-mint font-display font-bold shrink-0">7</div>
         <div>
@@ -438,7 +386,7 @@
     </div>
 
     <!-- Revenue Distribution (Feature 4) -->
-    <div id="step-revenue" class="glass rounded-2xl p-8 card-glow">
+    <div id="step-revenue" class="glass rounded-2xl p-5 sm:p-8 card-glow">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet to-cyan flex items-center justify-center font-display font-bold text-sm shrink-0">$</div>
         <div>
@@ -471,7 +419,7 @@
     </div>
 
     <!-- Proposals (Feature 9) -->
-    <div id="step-proposals" class="glass rounded-2xl p-8 card-glow">
+    <div id="step-proposals" class="glass rounded-2xl p-5 sm:p-8 card-glow">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-aurora-blue/20 flex items-center justify-center text-aurora-blue font-display font-bold shrink-0">📋</div>
         <div>
@@ -502,7 +450,7 @@
     </div>
 
     <!-- Tier Progression (Feature 6) -->
-    <div id="step-tier" class="glass rounded-2xl p-8 card-glow">
+    <div id="step-tier" class="glass rounded-2xl p-5 sm:p-8 card-glow">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-10 h-10 rounded-xl bg-amber/20 flex items-center justify-center text-amber font-display font-bold shrink-0">★</div>
         <div>
@@ -751,7 +699,7 @@ function completeStep(name) {
 
 // ─── Wallet Connection ───────────────────────────────────────────────
 async function addNetwork() {
-  if (!window.ethereum) { alert('Please install MetaMask first.'); return; }
+  if (!window.ethereum) { window.adara?.toastWarn?.('Please install a wallet (MetaMask, Rabby) or connect via WalletConnect.') ?? alert('Please install MetaMask first.'); return; }
   try {
     await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
       chainId: CHAIN_ID_HEX,
@@ -764,7 +712,7 @@ async function addNetwork() {
 }
 
 async function connectWallet() {
-  if (!window.ethereum) { alert('Please install MetaMask first.'); return; }
+  if (!window.ethereum) { window.adara?.toastWarn?.('Please install a wallet (MetaMask, Rabby) or connect via WalletConnect.') ?? alert('Please install MetaMask first.'); return; }
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     provider = new ethers.BrowserProvider(window.ethereum);
